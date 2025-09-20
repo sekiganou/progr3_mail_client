@@ -13,4 +13,5 @@
 
     <Label fx:id="welcomeText"/>
     <Button text="Hello!" onAction="#onHelloButtonClick"/>
+       <Label fx:id="welcomeText1" layoutX="57.0" layoutY="30.0" text="This is the mail client" />
 </VBox>
