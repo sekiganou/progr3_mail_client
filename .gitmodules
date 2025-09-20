@@ -1,0 +1,4 @@
+[submodule "schema"]
+	path = schema
+	url = https://github.com/sekiganou/progr3_mail_schema.git
+	branch = main
