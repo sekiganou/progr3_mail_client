@@ -89,7 +89,7 @@
                 <version>1.2.2</version>
                 <configuration>
                     <sourceDirectory>${basedir}/schema</sourceDirectory>
-                    <targetPackage>progr3.mail.server.model</targetPackage>
+                    <targetPackage>progr3.mail.client.model</targetPackage>
                 </configuration>
                 <executions>
                     <execution>

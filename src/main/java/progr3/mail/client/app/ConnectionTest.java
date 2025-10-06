@@ -5,13 +5,12 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import progr3.mail.client.model.Request.Command;
+import progr3.mail.client.model.Request;
+import progr3.mail.client.model.Response;
+import progr3.mail.client.model.User;
 
-import progr3.mail.server.model.Request;
-import progr3.mail.server.model.Response;
-import progr3.mail.server.model.MailRequest.LoginBodyIn;
-import progr3.mail.server.model.MailResponse.LoginBodyOut;
-import progr3.mail.server.model.Request.Command;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ConnectionTest {
     public static void main(String[] args) {
@@ -29,12 +28,9 @@ public class ConnectionTest {
             System.out.println("\n2. Preparing request...");
             ObjectMapper mapper = new ObjectMapper();
 
-            LoginBodyIn loginBodyIn = new LoginBodyIn();
-            loginBodyIn.setEmail("luca.bianchi@unito.com");
-
             Request request = new Request();
             request.setCommand(Command.LOGIN);
-            request.setBody(mapper.writeValueAsString(loginBodyIn));
+            request.setBody("alessio-bagno@unito.com");
 
             String requestJson = mapper.writeValueAsString(request);
             System.out.println("✓ Request JSON:");
@@ -80,9 +76,12 @@ public class ConnectionTest {
             System.out.println("✓ Response parsed successfully");
             System.out.println("  Status: " + response.getStatus());
             System.out.println("  Message: " + response.getMessage());
-            LoginBodyOut loginBodyOut = mapper.readValue(response.getBody(), LoginBodyOut.class);
-            System.out.println("  Body: " + response.getBody());
-            System.out.println("Email: " + loginBodyOut.getEmail());
+            if (response.getBody() != null) {
+                User user = mapper.readValue(response.getBody(), User.class);
+                System.out.println("  Body: " + response.getBody());
+                System.out.println("Email: " + user.getEmail());
+
+            }
 
             // Step 7: Close
             System.out.println("\n7. Closing connection...");
