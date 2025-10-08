@@ -1,0 +1,53 @@
+package progr3.mail.client.app;
+
+import java.net.Socket;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import progr3.mail.client.model.Request;
+import progr3.mail.client.model.Response;
+import progr3.mail.client.model.Request.Command;
+
+public class ApiHandler {
+    private ObjectMapper mapper = new ObjectMapper();
+
+    public <T> T sendRequest(Command command, Object requestBody, Class<T> responseBodyType) {
+        try {
+            Socket socket = new Socket("localhost", 8080);
+
+            // Prepare request
+            Request request = new Request();
+            request.setCommand(command);
+
+            if (requestBody.getClass() == String.class)
+                request.setBody((String) requestBody);
+            else
+                request.setBody(mapper.writeValueAsString(requestBody));
+
+            // Serialize request to JSON
+            String requestJson = mapper.writeValueAsString(request);
+            byte[] requestBytes = requestJson.getBytes("UTF-8");
+
+            // Send request
+            socket.getOutputStream().write(requestBytes);
+            socket.getOutputStream().flush();
+            socket.shutdownOutput();
+
+            // Read response
+            byte[] responseBytes = socket.getInputStream().readAllBytes();
+            String responseJson = new String(responseBytes, "UTF-8");
+
+            socket.close();
+
+            // Deserialize response from JSON
+            var response = mapper.readValue(responseJson, Response.class);
+            return mapper.readValue(response.getBody(), responseBodyType);
+        } catch (Exception e) {
+            System.out
+                    .println("Error during API request: " + e.getMessage() + " (" + e.getClass().getSimpleName() + ")");
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+}
