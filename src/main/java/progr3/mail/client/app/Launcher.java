@@ -1,14 +1,6 @@
 package progr3.mail.client.app;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import javafx.application.Application;
+// import javafx.application.Application;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.api.UserApi;
 import progr3.mail.client.hooks.Auth;
@@ -20,10 +12,11 @@ public class Launcher {
         var messageApi = new MessageApi(apiHandler);
 
         userApi.login("alessio-bagno@unito.com");
-        if (Auth.isAuthenticated())
-            System.out.println("User is authenticated");
-        else
-            System.out.println("User is NOT authenticated");
+
+        if (!Auth.isAuthenticated()) {
+            System.out.println("User NOT is authenticated");
+            return;
+        }
 
         var messages = messageApi.getMessagesForUser();
         System.out.println("Messages count: " + messages.length);
