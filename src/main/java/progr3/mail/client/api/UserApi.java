@@ -1,5 +1,7 @@
 package progr3.mail.client.api;
 
+import java.util.List;
+
 import progr3.mail.client.app.ApiHandler;
 import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.model.Request.Command;
@@ -22,5 +24,9 @@ public class UserApi {
     public void Logout() {
         if (Auth.isAuthenticated())
             Auth.clearAuth();
+    }
+
+    public User[] getUsers(List<String> userIds) {
+        return api.sendRequest(Command.GET_USERS, userIds, User[].class);
     }
 }

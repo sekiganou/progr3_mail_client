@@ -4,8 +4,10 @@ import java.net.Socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javafx.application.Platform;
 import progr3.mail.client.model.Request;
 import progr3.mail.client.model.Response;
+import progr3.mail.client.util.ToastNotification;
 import progr3.mail.client.model.Request.Command;
 
 public class ApiHandler {
@@ -41,10 +43,24 @@ public class ApiHandler {
 
             // Deserialize response from JSON
             var response = mapper.readValue(responseJson, Response.class);
+
+            // Check for error status
+            if (response.getResult() == Response.Result.FAILURE) {
+                String errorMsg = response.getMessage() != null ? response.getMessage()
+                        : "Request failed with status " + response.getStatus();
+
+                Platform.runLater(() -> ToastNotification.show(errorMsg, ToastNotification.Type.ERROR));
+                return null;
+            }
+
             return mapper.readValue(response.getBody(), responseBodyType);
         } catch (Exception e) {
             System.out
                     .println("Error during API request: " + e.getMessage() + " (" + e.getClass().getSimpleName() + ")");
+
+            Platform.runLater(() -> ToastNotification.show("Connection error: " + e.getMessage(),
+                    ToastNotification.Type.ERROR));
+
             e.printStackTrace();
             return null;
         }

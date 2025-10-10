@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21.0.3-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="progr3.mail.client.app.MessagesViewController">
+    
+    <!-- Top Bar -->
+    <top>
+        <VBox spacing="10.0" style="-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;">
+            <padding>
+                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+            </padding>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0">
+                <Label style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #333333;" text="Mail Client" />
+                <Label fx:id="userLabel" style="-fx-font-size: 14px; -fx-text-fill: #666666;" text="" />
+                <HBox HBox.hgrow="ALWAYS" />
+                <Button fx:id="logoutButton" onAction="#onLogoutClick" style="-fx-background-color: #F44336; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 8px 20px; -fx-font-weight: bold; -fx-background-radius: 5px; -fx-cursor: hand;" text="Logout" />
+            </HBox>
+            
+            <HBox alignment="CENTER_LEFT" spacing="10.0">
+                <TextField fx:id="searchField" prefWidth="300.0" promptText="Search messages..." style="-fx-font-size: 13px; -fx-padding: 8px;" />
+                <Button fx:id="composeButton" onAction="#onComposeClick" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8px 20px; -fx-background-radius: 5px; -fx-cursor: hand;" text="Compose" />
+                <Button fx:id="refreshButton" onAction="#onRefreshClick" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8px 20px; -fx-background-radius: 5px; -fx-cursor: hand;" text="Refresh" />
+            </HBox>
+
+        </VBox>
+    </top>
+
+    <!-- Center - Split View -->
+   <center>
+    <HBox spacing="10.0">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        </padding>
+        <children>
+
+            <!-- Left side: Messages Table -->
+            <VBox spacing="10.0" VBox.vgrow="ALWAYS">
+                <TableView fx:id="messagesTableView" prefHeight="368.0" prefWidth="651.0" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="statusColumn" prefWidth="30.0" text="" />
+                        <TableColumn fx:id="senderColumn" prefWidth="160.0" text="From" />
+                        <TableColumn fx:id="subjectColumn" prefWidth="160.0" text="Subject" />
+                        <TableColumn fx:id="timestampColumn" prefWidth="160.0" text="Date" />
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <!-- Right side: Message Details -->
+            <VBox prefHeight="250.0" spacing="10.0"
+                  style="-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 5px; -fx-padding: 15px;"
+                  HBox.hgrow="ALWAYS">
+                <children>
+                    <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #333333;" text="Message Details" />
+
+                      <!-- Action Buttons -->
+                      <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                          <children>
+                              <Button fx:id="replyButton" text="Reply" onAction="#onReplyClick"
+                                      style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 5px; -fx-cursor: hand; -fx-padding: 6px 12px;" />
+                              <Button fx:id="replyAllButton" text="Reply All" onAction="#onReplyAllClick"
+                                      style="-fx-background-color: #1976D2; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 5px; -fx-cursor: hand; -fx-padding: 6px 12px;" />
+                              <Button fx:id="forwardButton" text="Forward" onAction="#onForwardClick"
+                                      style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 5px; -fx-cursor: hand; -fx-padding: 6px 12px;" />
+                              <Button fx:id="deleteButton" text="Delete" onAction="#onDeleteClick"
+                                      style="-fx-background-color: #F44336; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 5px; -fx-cursor: hand; -fx-padding: 6px 12px;" />
+                          </children>
+                      </HBox>
+
+
+                    <HBox spacing="10.0">
+                        <children>
+                            <Label prefWidth="80.0" style="-fx-font-weight: bold; -fx-text-fill: #666666;" text="From:" />
+                            <Label fx:id="detailSenderLabel" style="-fx-text-fill: #333333;" text="-" />
+                        </children>
+                    </HBox>
+                    <HBox spacing="10.0">
+                        <children>
+                            <Label prefWidth="80.0" style="-fx-font-weight: bold; -fx-text-fill: #666666;" text="Subject:" />
+                            <Label fx:id="detailSubjectLabel" style="-fx-text-fill: #333333;" text="-" />
+                        </children>
+                    </HBox>
+                    <HBox spacing="10.0">
+                        <children>
+                            <Label prefWidth="80.0" style="-fx-font-weight: bold; -fx-text-fill: #666666;" text="Date:" />
+                            <Label fx:id="detailDateLabel" style="-fx-text-fill: #333333;" text="-" />
+                        </children>
+                    </HBox>
+                    <Label style="-fx-font-weight: bold; -fx-text-fill: #666666;" text="Body:" />
+                    <TextArea fx:id="detailBodyArea" editable="false"
+                              style="-fx-font-size: 13px; -fx-border-color: #e0e0e0;"
+                              wrapText="true" VBox.vgrow="ALWAYS" />
+                </children>
+            </VBox>
+
+        </children>
+    </HBox>
+    </center>
+
+    <!-- Bottom Status Bar -->
+    <bottom>
+        <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: #f5f5f5; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0;">
+            <padding>
+                <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
+            </padding>
+            <Label fx:id="statusLabel" style="-fx-text-fill: #666666;" text="Ready" />
+            <Label fx:id="messageCountLabel" style="-fx-text-fill: #666666;" text="Total messages: 0" />
+        </HBox>
+    </bottom>
+</BorderPane>

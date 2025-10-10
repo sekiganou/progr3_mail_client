@@ -13,6 +13,10 @@ public class Auth {
         return Auth.user.getGuid();
     }
 
+    public static User getUser() {
+        return Auth.user;
+    }
+
     public static boolean isAuthenticated() {
         return Auth.user != null;
     }
