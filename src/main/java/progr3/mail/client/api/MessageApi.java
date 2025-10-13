@@ -61,8 +61,8 @@ public class MessageApi {
         return api.sendRequest(Command.FORWARD_MESSAGE, requestBody, String.class);
     }
 
-    public void deleteMessage(String messageId) {
-        api.sendRequest(Command.DELETE_MESSAGE, messageId, String.class);
+    public String deleteMessage(String messageId) {
+        return api.sendRequest(Command.DELETE_MESSAGE, messageId, String.class);
     }
 
 }

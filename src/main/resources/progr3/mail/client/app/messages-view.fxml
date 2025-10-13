@@ -86,6 +86,12 @@
                     </HBox>
                     <HBox spacing="10.0">
                         <children>
+                            <Label prefWidth="80.0" style="-fx-font-weight: bold; -fx-text-fill: #666666;" text="To:" />
+                            <Label fx:id="detailRecipientsLabel" style="-fx-text-fill: #333333;" text="-" />
+                        </children>
+                    </HBox>
+                    <HBox spacing="10.0">
+                        <children>
                             <Label prefWidth="80.0" style="-fx-font-weight: bold; -fx-text-fill: #666666;" text="Subject:" />
                             <Label fx:id="detailSubjectLabel" style="-fx-text-fill: #333333;" text="-" />
                         </children>

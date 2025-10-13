@@ -18,16 +18,16 @@ import java.util.List;
 public class SendMessageViewController {
 
     @FXML
-    private Label fromLabel;
+    public Label fromLabel;
 
     @FXML
-    private TextField toField;
+    public TextField toField;
 
     @FXML
-    private TextField subjectField;
+    public TextField subjectField;
 
     @FXML
-    private TextArea bodyArea;
+    public TextArea bodyArea;
 
     @FXML
     private Label statusLabel;

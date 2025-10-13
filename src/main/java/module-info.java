@@ -1,5 +1,5 @@
 module progr3.mail.client.app {
-    requires javafx.controls;
+    requires transitive javafx.controls;
     requires javafx.fxml;
     requires java.compiler;
 

@@ -10,11 +10,15 @@ public class Auth {
     }
 
     public static String getUserId() {
-        return Auth.user.getGuid();
+        if (Auth.isAuthenticated())
+            return Auth.user.getGuid();
+        return null;
     }
 
     public static User getUser() {
-        return Auth.user;
+        if (Auth.isAuthenticated())
+            return Auth.user;
+        return null;
     }
 
     public static boolean isAuthenticated() {
