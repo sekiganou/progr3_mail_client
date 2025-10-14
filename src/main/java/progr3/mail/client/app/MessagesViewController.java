@@ -9,7 +9,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
+import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.api.UserApi;
 import progr3.mail.client.hooks.Auth;
@@ -72,9 +74,13 @@ public class MessagesViewController {
     @FXML
     private Label messageCountLabel;
 
+    @FXML
+    private Circle connectionIndicator;
+
     private ApiHandler apiHandler;
     private MessageApi messageApi;
     private UserApi userApi;
+    private HealthApi healthApi;
     private HashMap<String, User> userCache = new HashMap<>();
     private ObservableList<Message> messageList = FXCollections.observableArrayList();
     private ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
@@ -104,6 +110,7 @@ public class MessagesViewController {
         this.apiHandler = new ApiHandler();
         this.messageApi = new MessageApi(apiHandler);
         this.userApi = new UserApi(apiHandler);
+        this.healthApi = new HealthApi(apiHandler);
     }
 
     @FXML
@@ -113,8 +120,11 @@ public class MessagesViewController {
         setupSearchFilter();
         setupMessageSelection();
 
+        checkServerHealth();
         loadMessages();
         loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
+
+        // checkServerHealthRecursively(POLLING_INTERVAL_SECONDS);
     }
 
     private void setupUserInfo() {
@@ -244,6 +254,7 @@ public class MessagesViewController {
                 e.printStackTrace();
             }
             Platform.runLater(() -> {
+                checkServerHealth();
                 loadNewMessages();
                 loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
             });
@@ -314,6 +325,25 @@ public class MessagesViewController {
                 }
             });
         }).start();
+    }
+
+    private void checkServerHealth() {
+        new Thread(() -> {
+            boolean isHealthy = healthApi.isServerHealthy();
+            updateConnectionIndicator(isHealthy);
+        }).start();
+    }
+
+    private void updateConnectionIndicator(boolean isConnected) {
+        Platform.runLater(() -> {
+            if (isConnected) {
+                connectionIndicator.setFill(javafx.scene.paint.Color.LIMEGREEN);
+                connectionIndicator.setStroke(javafx.scene.paint.Color.DARKGREEN);
+            } else {
+                connectionIndicator.setFill(javafx.scene.paint.Color.RED);
+                connectionIndicator.setStroke(javafx.scene.paint.Color.DARKRED);
+            }
+        });
     }
 
     private void updateMessageCount() {

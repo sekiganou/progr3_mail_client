@@ -56,7 +56,8 @@ public class ApiHandler {
             return mapper.readValue(response.getBody(), responseBodyType);
         } catch (Exception e) {
             System.out
-                    .println("Error during API request: " + e.getMessage() + " (" + e.getClass().getSimpleName() + ")");
+                    .println("Error during API request " + command + ": " + e.getMessage() + " ("
+                            + e.getClass().getSimpleName() + ")");
 
             Platform.runLater(() -> ToastNotification.show("Connection error: " + e.getMessage(),
                     ToastNotification.Type.ERROR));
@@ -65,5 +66,4 @@ public class ApiHandler {
             return null;
         }
     }
-
 }
