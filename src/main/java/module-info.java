@@ -7,6 +7,7 @@ module progr3.mail.client.app {
     requires com.fasterxml.jackson.databind;
     // requires atlantafx.base;
     requires javafx.graphics;
+    requires javafx.base;
 
     opens progr3.mail.client.app to javafx.fxml;
 

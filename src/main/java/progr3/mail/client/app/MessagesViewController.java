@@ -1,6 +1,5 @@
 package progr3.mail.client.app;
 
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -21,7 +20,6 @@ import progr3.mail.client.util.ToastNotification;
 
 import java.io.IOException;
 import java.util.Date;
-import javafx.util.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -82,10 +80,12 @@ public class MessagesViewController {
     private UserApi userApi;
     private HealthApi healthApi;
     private HashMap<String, User> userCache = new HashMap<>();
-    private ObservableList<Message> messageList = FXCollections.observableArrayList();
-    private ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
 
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+    public ObservableList<Message> messageList = FXCollections.observableArrayList();
+    public ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     private static final int POLLING_INTERVAL_SECONDS = 30;
 
@@ -167,7 +167,7 @@ public class MessagesViewController {
         // Timestamp column
         timestampColumn.setCellValueFactory(cellData -> {
             String timestamp = cellData.getValue().getDate().toString();
-            String formattedTime = formatTimestamp(timestamp);
+            String formattedTime = formatTimestamp(DATE_FORMATTER, timestamp);
             return new SimpleStringProperty(formattedTime);
         });
 
@@ -187,11 +187,11 @@ public class MessagesViewController {
         });
     }
 
-    private String formatTimestamp(String timestamp) {
+    private String formatTimestamp(DateTimeFormatter formatter, String timestamp) {
         try {
             Instant instant = Instant.parse(timestamp);
             LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-            return localDateTime.format(TIME_FORMATTER);
+            return localDateTime.format(formatter);
         } catch (Exception e) {
             return timestamp;
         }
@@ -242,7 +242,7 @@ public class MessagesViewController {
         detailSenderLabel.setText(userCache.get(message.getSenderUserGUID()).getName() + " <" +
                 userCache.get(message.getSenderUserGUID()).getEmail() + ">");
         detailSubjectLabel.setText(message.getSubject());
-        detailDateLabel.setText(formatTimestamp(message.getDate().toString()));
+        detailDateLabel.setText(formatTimestamp(DATE_TIME_FORMATTER, message.getDate().toString()));
         detailBodyArea.setText(message.getBody());
     }
 
@@ -275,6 +275,7 @@ public class MessagesViewController {
                     messageList.addAll(messages);
                     filterMessages(searchField.getText());
                     updateMessageCount();
+
                     updateUserCache();
                     statusLabel.setText("Loaded " + messages.length + " message(s)");
                     statusLabel.setStyle("-fx-text-fill: #4CAF50;");
@@ -306,7 +307,7 @@ public class MessagesViewController {
             Platform.runLater(() -> {
                 if (newMessages != null && newMessages.length > 0) {
                     for (Message message : newMessages) {
-                        message = setIsNew(message, false);
+                        message = setIsNew(message, true);
                     }
                     messageList.addAll(newMessages);
                     filterMessages(searchField.getText());
@@ -449,7 +450,8 @@ public class MessagesViewController {
                         subject = "Re: " + subject;
                     }
                     controller.subjectField.setText(subject);
-                    String body = "\n\n--- On " + formatTimestamp(selectedMessage.getDate().toString()) +
+                    String body = "\n\n--- On "
+                            + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
                             ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
                     controller.bodyArea.setText(body);
                 }
@@ -496,7 +498,8 @@ public class MessagesViewController {
                         subject = "Re: " + subject;
                     }
                     controller.subjectField.setText(subject);
-                    String body = "\n\n--- On " + formatTimestamp(selectedMessage.getDate().toString()) +
+                    String body = "\n\n--- On "
+                            + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
                             ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
                     controller.bodyArea.setText(body);
                 }
@@ -529,7 +532,7 @@ public class MessagesViewController {
                 String body = "\n\n--- Forwarded message ---\nFrom: " +
                         userCache.get(selectedMessage.getSenderUserGUID()).getName() + " <" +
                         userCache.get(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
-                        formatTimestamp(selectedMessage.getDate().toString()) + "\nSubject: " +
+                        formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
                         selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
                 controller.bodyArea.setText(body);
             }
@@ -550,7 +553,14 @@ public class MessagesViewController {
         try {
             Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
             if (selectedMessage != null) {
-                messageApi.deleteMessage(selectedMessage.getGuid());
+                String response = messageApi.deleteMessage(selectedMessage.getGuid());
+                if (response == null || !response.equals("OK")) {
+                    statusLabel.setText("Failed to delete message");
+                    statusLabel.setStyle("-fx-text-fill: #F44336;");
+
+                    ToastNotification.show("Failed to delete message", ToastNotification.Type.ERROR);
+                    return;
+                }
 
                 messageList.remove(selectedMessage);
                 filterMessages(searchField.getText());
