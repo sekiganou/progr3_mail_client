@@ -3,6 +3,7 @@ package progr3.mail.client.app;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,17 +17,16 @@ import progr3.mail.client.api.UserApi;
 import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.model.Message;
 import progr3.mail.client.model.User;
+import progr3.mail.client.models.MessageStore;
+import progr3.mail.client.models.UserCache;
 import progr3.mail.client.util.ToastNotification;
 
 import java.io.IOException;
-import java.util.Date;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 
 public class MessagesViewController {
 
@@ -79,9 +79,10 @@ public class MessagesViewController {
     private MessageApi messageApi;
     private UserApi userApi;
     private HealthApi healthApi;
-    private HashMap<String, User> userCache = new HashMap<>();
+    private UserCache userCache;
+    private MessageStore messageStore;
 
-    public ObservableList<Message> messageList = FXCollections.observableArrayList();
+    public ObservableList<Message> messageList;
     public ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -89,28 +90,14 @@ public class MessagesViewController {
 
     private static final int POLLING_INTERVAL_SECONDS = 30;
 
-    private static final String IS_NEW = "isNew";
-
-    private boolean getIsNew(Message msg) {
-        if (msg.getAdditionalProperties().containsKey(IS_NEW)) {
-            Object isNewObj = msg.getAdditionalProperties().get(IS_NEW);
-            if (isNewObj instanceof Boolean) {
-                return (Boolean) isNewObj;
-            }
-        }
-        return false;
-    }
-
-    private Message setIsNew(Message msg, boolean isNew) {
-        msg.setAdditionalProperty(IS_NEW, isNew);
-        return msg;
-    }
-
     public MessagesViewController() {
         this.apiHandler = new ApiHandler();
         this.messageApi = new MessageApi(apiHandler);
         this.userApi = new UserApi(apiHandler);
         this.healthApi = new HealthApi(apiHandler);
+        this.userCache = new UserCache(userApi);
+        this.messageStore = new MessageStore(messageApi);
+        this.messageList = messageStore.messageList;
     }
 
     @FXML
@@ -120,11 +107,11 @@ public class MessagesViewController {
         setupSearchFilter();
         setupMessageSelection();
 
+        setupMessageListListener();
+
         checkServerHealth();
         loadMessages();
         loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
-
-        // checkServerHealthRecursively(POLLING_INTERVAL_SECONDS);
     }
 
     private void setupUserInfo() {
@@ -136,7 +123,7 @@ public class MessagesViewController {
     private void setupTableColumns() {
         // Status column (read/unread indicator)
         statusColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(getIsNew(cellData.getValue()) ? "●" : ""));
+                cellData -> new SimpleStringProperty(messageStore.isNew(cellData.getValue()) ? "●" : ""));
 
         statusColumn.setCellFactory(column -> new TableCell<Message, String>() {
             @Override
@@ -158,7 +145,8 @@ public class MessagesViewController {
 
         // Sender column
         senderColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(userCache.get(cellData.getValue().getSenderUserGUID()).getName()));
+                cellData -> new SimpleStringProperty(
+                        userCache.getUserById(cellData.getValue().getSenderUserGUID()).getName()));
 
         // Subject column
         subjectColumn.setCellValueFactory(
@@ -178,7 +166,7 @@ public class MessagesViewController {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setStyle("");
-                } else if (getIsNew(item)) {
+                } else if (messageStore.isNew(item)) {
                     setStyle("-fx-font-weight: bold; -fx-background-color: #E3F2FD;");
                 } else {
                     setStyle("");
@@ -208,10 +196,10 @@ public class MessagesViewController {
                 (observable, oldValue, newValue) -> {
                     if (newValue != null) {
                         displayMessageDetails(newValue);
-                        newValue = setIsNew(newValue, false);
+                        newValue = messageStore.setIsNotNew(newValue);
                     }
-                    messagesTableView.refresh();
-                    updateMessageCount();
+                    // messagesTableView.refresh();
+                    // updateMessageCount();
                 });
     }
 
@@ -236,11 +224,11 @@ public class MessagesViewController {
     private void displayMessageDetails(Message message) {
         var recipients = new ArrayList<String>();
         message.getRecipientsUserGUIDs().forEach(guid -> {
-            recipients.add(userCache.get(guid).getEmail());
+            recipients.add(userCache.getUserById(guid).getEmail());
         });
         detailRecipientsLabel.setText(String.join(", ", recipients));
-        detailSenderLabel.setText(userCache.get(message.getSenderUserGUID()).getName() + " <" +
-                userCache.get(message.getSenderUserGUID()).getEmail() + ">");
+        detailSenderLabel.setText(userCache.getUserById(message.getSenderUserGUID()).getName() + " <" +
+                userCache.getUserById(message.getSenderUserGUID()).getEmail() + ">");
         detailSubjectLabel.setText(message.getSubject());
         detailDateLabel.setText(formatTimestamp(DATE_TIME_FORMATTER, message.getDate().toString()));
         detailBodyArea.setText(message.getBody());
@@ -263,69 +251,37 @@ public class MessagesViewController {
     }
 
     private void loadMessages() {
-        new Thread(() -> {
-            Message[] messages = messageApi.getMessages();
+        messageStore.loadMessages(new MessageStore.LoadCallback() {
+            @Override
+            public void onSuccess(int messageCount) {
+                statusLabel.setText("Loaded " + messageCount + " message(s)");
+                statusLabel.setStyle("-fx-text-fill: #4CAF50;");
+            }
 
-            Platform.runLater(() -> {
-                if (messages != null) {
-                    messageList.clear();
-                    for (Message message : messages) {
-                        message = setIsNew(message, false);
-                    }
-                    messageList.addAll(messages);
-                    filterMessages(searchField.getText());
-                    updateMessageCount();
-
-                    updateUserCache();
-                    statusLabel.setText("Loaded " + messages.length + " message(s)");
-                    statusLabel.setStyle("-fx-text-fill: #4CAF50;");
-                } else {
-                    statusLabel.setText("Failed to load messages");
-                    statusLabel.setStyle("-fx-text-fill: #F44336;");
-
-                    ToastNotification.show(
-                            "Failed to load messages",
-                            ToastNotification.Type.ERROR);
-                }
-            });
-        }).start();
+            @Override
+            public void onFailure() {
+                statusLabel.setText("Failed to load messages");
+                statusLabel.setStyle("-fx-text-fill: #F44336;");
+                ToastNotification.show("Failed to load messages", ToastNotification.Type.ERROR);
+            }
+        });
     }
 
     private void loadNewMessages() {
-        new Thread(() -> {
-            var latestTimestamp = messageList.stream()
-                    .map(Message::getDate)
-                    .max(new Comparator<Date>() {
-                        @Override
-                        public int compare(Date o1, Date o2) {
-                            return o1.compareTo(o2);
-                        }
-                    })
-                    .orElse(new Date(0));
-            Message[] newMessages = messageApi.getMessagesWithFilter(latestTimestamp, new Date());
+        messageStore.loadNewMessages(new MessageStore.LoadCallback() {
+            @Override
+            public void onSuccess(int messageCount) {
+                statusLabel.setText("Loaded " + messageCount + " new message(s)");
+                statusLabel.setStyle("-fx-text-fill: #4CAF50;");
+                ToastNotification.show("Loaded " + messageCount + " new message(s)", ToastNotification.Type.SUCCESS);
+            }
 
-            Platform.runLater(() -> {
-                if (newMessages != null && newMessages.length > 0) {
-                    for (Message message : newMessages) {
-                        message = setIsNew(message, true);
-                    }
-                    messageList.addAll(newMessages);
-                    filterMessages(searchField.getText());
-                    updateMessageCount();
-                    updateUserCache();
-                    statusLabel.setText("Loaded " + newMessages.length + " new message(s)");
-                    statusLabel.setStyle("-fx-text-fill: #4CAF50;");
-                    messagesTableView.refresh();
-
-                    ToastNotification.show(
-                            "Loaded " + newMessages.length + " new message(s)",
-                            ToastNotification.Type.SUCCESS);
-                } else {
-                    statusLabel.setText("No new messages");
-                    statusLabel.setStyle("-fx-text-fill: #2196F3;");
-                }
-            });
-        }).start();
+            @Override
+            public void onFailure() {
+                statusLabel.setText("No new messages");
+                statusLabel.setStyle("-fx-text-fill: #2196F3;");
+            }
+        });
     }
 
     private void checkServerHealth() {
@@ -350,7 +306,7 @@ public class MessagesViewController {
     private void updateMessageCount() {
         int unreadCount = 0;
         for (Message msg : messageList) {
-            if (getIsNew(msg)) {
+            if (messageStore.isNew(msg)) {
                 unreadCount++;
             }
         }
@@ -361,28 +317,28 @@ public class MessagesViewController {
                 " | Unread: " + unreadCount);
     }
 
-    private void updateUserCache() {
-        HashMap<String, Boolean> missingUserIds = new HashMap<>();
-        for (Message msg : messageList) {
-            if (!userCache.containsKey(msg.getSenderUserGUID())) {
-                missingUserIds.put(msg.getSenderUserGUID(), true);
-            }
-
-            for (String recipientId : msg.getRecipientsUserGUIDs()) {
-                if (!userCache.containsKey(recipientId)) {
-                    missingUserIds.put(recipientId, true);
+    private void setupMessageListListener() {
+        messageList.addListener((ListChangeListener<Message>) change -> {
+            while (change.next()) {
+                if (change.wasAdded()) {
+                    // Get newly added messages
+                    Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
+                    userCache.updateUserCache(addedMessages);
+                    messagesTableView.refresh();
+                    updateMessageCount();
+                    filterMessages(searchField.getText());
                 }
-            }
-        }
 
-        if (!missingUserIds.isEmpty()) {
-            User[] users = userApi.getUsers(missingUserIds.keySet().stream().toList());
-            if (users != null) {
-                for (User user : users) {
-                    userCache.put(user.getGuid(), user);
+                if (change.wasRemoved()) {
+                    messagesTableView.refresh();
+                    updateMessageCount();
+                    filterMessages(searchField.getText());
                 }
+                // You can also handle other change types:
+                // if (change.wasRemoved()) { ... }
+                // if (change.wasUpdated()) { ... }
             }
-        }
+        });
     }
 
     @FXML
@@ -441,7 +397,7 @@ public class MessagesViewController {
             Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
             if (selectedMessage != null) {
-                User sender = userCache.get(selectedMessage.getSenderUserGUID());
+                User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
                 if (sender != null) {
                     controller.fromLabel.setText(Auth.getUser().getEmail());
                     controller.toField.setText(sender.getEmail());
@@ -480,13 +436,13 @@ public class MessagesViewController {
             SendMessageViewController controller = fxmlLoader.getController();
             Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
             if (selectedMessage != null) {
-                User sender = userCache.get(selectedMessage.getSenderUserGUID());
+                User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
                 if (sender != null) {
                     controller.fromLabel.setText(Auth.getUser().getEmail());
                     var recipients = new ArrayList<String>();
                     recipients.add(sender.getEmail());
                     selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
-                        var user = userCache.get(guid);
+                        var user = userCache.getUserById(guid);
                         if (user != null && !user.getEmail().equals(Auth.getUser().getEmail())
                                 && !user.getEmail().equals(sender.getEmail())) {
                             recipients.add(user.getEmail());
@@ -530,8 +486,8 @@ public class MessagesViewController {
                 controller.fromLabel.setText(Auth.getUser().getEmail());
                 controller.subjectField.setText("Fwd: " + selectedMessage.getSubject());
                 String body = "\n\n--- Forwarded message ---\nFrom: " +
-                        userCache.get(selectedMessage.getSenderUserGUID()).getName() + " <" +
-                        userCache.get(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
+                        userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
+                        userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
                         formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
                         selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
                 controller.bodyArea.setText(body);
