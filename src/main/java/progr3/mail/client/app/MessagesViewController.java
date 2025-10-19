@@ -82,7 +82,6 @@ public class MessagesViewController {
     private UserCache userCache;
     private MessageStore messageStore;
 
-    public ObservableList<Message> messageList;
     public ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -97,7 +96,6 @@ public class MessagesViewController {
         this.healthApi = new HealthApi(apiHandler);
         this.userCache = new UserCache(userApi);
         this.messageStore = new MessageStore(messageApi);
-        this.messageList = messageStore.messageList;
     }
 
     @FXML
@@ -205,11 +203,11 @@ public class MessagesViewController {
 
     private void filterMessages(String searchTerm) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            filteredMessageList.setAll(messageList);
+            filteredMessageList.setAll(messageStore.messageList);
         } else {
             String lowerCaseFilter = searchTerm.toLowerCase();
             filteredMessageList.clear();
-            for (Message message : messageList) {
+            for (Message message : messageStore.messageList) {
                 if (message.getSenderUserGUID().toLowerCase().contains(lowerCaseFilter) ||
                         message.getSubject().toLowerCase().contains(lowerCaseFilter) ||
                         message.getBody().toLowerCase().contains(lowerCaseFilter)) {
@@ -305,23 +303,24 @@ public class MessagesViewController {
 
     private void updateMessageCount() {
         int unreadCount = 0;
-        for (Message msg : messageList) {
+        for (Message msg : messageStore.messageList) {
             if (messageStore.isNew(msg)) {
                 unreadCount++;
             }
         }
 
         messageCountLabel.setText("Total messages: " + filteredMessageList.size() +
-                (filteredMessageList.size() != messageList.size() ? " (filtered from " + messageList.size() + ")" : "")
+                (filteredMessageList.size() != messageStore.messageList.size()
+                        ? " (filtered from " + messageStore.messageList.size() + ")"
+                        : "")
                 +
                 " | Unread: " + unreadCount);
     }
 
     private void setupMessageListListener() {
-        messageList.addListener((ListChangeListener<Message>) change -> {
+        messageStore.messageList.addListener((ListChangeListener<Message>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
-                    // Get newly added messages
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
                     userCache.updateUserCache(addedMessages);
                     messagesTableView.refresh();
@@ -334,8 +333,7 @@ public class MessagesViewController {
                     updateMessageCount();
                     filterMessages(searchField.getText());
                 }
-                // You can also handle other change types:
-                // if (change.wasRemoved()) { ... }
+
                 // if (change.wasUpdated()) { ... }
             }
         });
@@ -386,121 +384,88 @@ public class MessagesViewController {
         }
     }
 
-    @FXML
-    private void onReplyClick() {
+    private void openSendMessageViewWithPrefill(String to, String subject, String body, String title) {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(
                     getClass().getResource("send-message-view.fxml"));
             Scene scene = new Scene(fxmlLoader.load(), 700, 600);
 
             SendMessageViewController controller = fxmlLoader.getController();
-            Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-
-            if (selectedMessage != null) {
-                User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
-                if (sender != null) {
-                    controller.fromLabel.setText(Auth.getUser().getEmail());
-                    controller.toField.setText(sender.getEmail());
-                    String subject = selectedMessage.getSubject();
-                    if (!subject.toLowerCase().startsWith("re:")) {
-                        subject = "Re: " + subject;
-                    }
-                    controller.subjectField.setText(subject);
-                    String body = "\n\n--- On "
-                            + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
-                            ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
-                    controller.bodyArea.setText(body);
-                }
-            }
+            controller.fromLabel.setText(Auth.getUser().getEmail());
+            controller.toField.setText(to);
+            controller.subjectField.setText(subject);
+            controller.bodyArea.setText(body);
 
             Stage stage = (Stage) userLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - Reply Message");
+            stage.setTitle("Mail Client - " + title);
             stage.setScene(scene);
 
         } catch (IOException e) {
             e.printStackTrace();
-            statusLabel.setText("Error loading reply view");
+            statusLabel.setText("Error loading " + title.toLowerCase() + " view");
             statusLabel.setStyle("-fx-text-fill: #F44336;");
-            ToastNotification.show("Error loading reply view",
+            ToastNotification.show("Error loading " + title.toLowerCase() + " view",
                     ToastNotification.Type.ERROR);
         }
     }
 
     @FXML
-    public void onReplyAllClick() {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(
-                    getClass().getResource("send-message-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 700, 600);
-
-            SendMessageViewController controller = fxmlLoader.getController();
-            Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-            if (selectedMessage != null) {
-                User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
-                if (sender != null) {
-                    controller.fromLabel.setText(Auth.getUser().getEmail());
-                    var recipients = new ArrayList<String>();
-                    recipients.add(sender.getEmail());
-                    selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
-                        var user = userCache.getUserById(guid);
-                        if (user != null && !user.getEmail().equals(Auth.getUser().getEmail())
-                                && !user.getEmail().equals(sender.getEmail())) {
-                            recipients.add(user.getEmail());
-                        }
-                    });
-                    controller.toField.setText(String.join(", ", recipients));
-                    String subject = selectedMessage.getSubject();
-                    if (!subject.toLowerCase().startsWith("re:")) {
-                        subject = "Re: " + subject;
-                    }
-                    controller.subjectField.setText(subject);
-                    String body = "\n\n--- On "
-                            + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
-                            ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
-                    controller.bodyArea.setText(body);
+    private void onReplyClick() {
+        Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
+        if (selectedMessage != null) {
+            User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
+            if (sender != null) {
+                String to = sender.getEmail();
+                String subject = selectedMessage.getSubject();
+                if (!subject.toLowerCase().startsWith("re:")) {
+                    subject = "Re: " + subject;
                 }
+                String body = "\n\n--- On "
+                        + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
+                        ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
+                openSendMessageViewWithPrefill(to, subject, body, "Reply Message");
             }
-            Stage stage = (Stage) userLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - Reply All Message");
-            stage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
-            statusLabel.setText("Error loading reply all view");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
-            ToastNotification.show("Error loading reply all view",
-                    ToastNotification.Type.ERROR);
         }
+    }
 
+    @FXML
+    private void onReplyAllClick() {
+        Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
+        if (selectedMessage != null) {
+            User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
+            if (sender != null) {
+                var recipients = new ArrayList<String>();
+                recipients.add(sender.getEmail());
+                selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
+                    var user = userCache.getUserById(guid);
+                    if (user != null && !user.getEmail().equals(Auth.getUser().getEmail())
+                            && !user.getEmail().equals(sender.getEmail()))
+                        recipients.add(user.getEmail());
+                });
+                String to = String.join(", ", recipients);
+                String subject = selectedMessage.getSubject();
+                if (!subject.toLowerCase().startsWith("re:"))
+                    subject = "Re: " + subject;
+
+                String body = "\n\n--- On "
+                        + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
+                        ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
+                openSendMessageViewWithPrefill(to, subject, body, "Reply All Message");
+            }
+        }
     }
 
     @FXML
     private void onForwardClick() {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(
-                    getClass().getResource("send-message-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 700, 600);
-
-            SendMessageViewController controller = fxmlLoader.getController();
-            Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-            if (selectedMessage != null) {
-                controller.fromLabel.setText(Auth.getUser().getEmail());
-                controller.subjectField.setText("Fwd: " + selectedMessage.getSubject());
-                String body = "\n\n--- Forwarded message ---\nFrom: " +
-                        userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
-                        userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
-                        formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
-                        selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
-                controller.bodyArea.setText(body);
-            }
-            Stage stage = (Stage) userLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - Forward Message");
-            stage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
-            statusLabel.setText("Error loading forward view");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
-            ToastNotification.show("Error loading forward view",
-                    ToastNotification.Type.ERROR);
+        Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
+        if (selectedMessage != null) {
+            String subject = "Fwd: " + selectedMessage.getSubject();
+            String body = "\n\n--- Forwarded message ---\nFrom: " +
+                    userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
+                    userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
+                    formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
+                    selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
+            openSendMessageViewWithPrefill("", subject, body, "Forward Message");
         }
     }
 
@@ -518,7 +483,7 @@ public class MessagesViewController {
                     return;
                 }
 
-                messageList.remove(selectedMessage);
+                messageStore.messageList.remove(selectedMessage);
                 filterMessages(searchField.getText());
                 updateMessageCount();
                 detailBodyArea.clear();
