@@ -2,6 +2,7 @@ package progr3.mail.client.models;
 
 import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -10,7 +11,8 @@ import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.model.Message;
 
 public class MessageStore {
-    public ObservableList<Message> messageList = FXCollections.observableArrayList();
+    private ObservableList<Message> messageList = FXCollections.observableArrayList();
+    private ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
 
@@ -22,6 +24,38 @@ public class MessageStore {
         void onSuccess(int messageCount);
 
         void onFailure();
+    }
+
+    public interface DeleteCallback {
+        void onSuccess();
+
+        void onFailure();
+    }
+
+    public interface SendCallback {
+        void onSuccess();
+
+        void onFailure();
+    }
+
+    public ObservableList<Message> getMessageList() {
+        return messageList;
+    }
+
+    public ObservableList<Message> getFilteredMessageList() {
+        return filteredMessageList;
+    }
+
+    public int getMessageCount() {
+        return messageList.size();
+    }
+
+    public int getFilteredMessageCount() {
+        return filteredMessageList.size();
+    }
+
+    public int getNewMessageCount() {
+        return messageList.stream().mapToInt(msg -> isNew(msg) ? 1 : 0).sum();
     }
 
     public Message setIsNotNew(Message msg) {
@@ -81,10 +115,63 @@ public class MessageStore {
                         message = setIsNew(message, true);
                         messageList.add(0, message);
                     }
+                    // filterMessages("");
                     callback.onSuccess(messages.length);
                 } else {
                     callback.onFailure();
                 }
+            });
+        }).start();
+    }
+
+    public void filterMessages(String filterText) {
+        if (filterText == null || filterText.trim().isEmpty()) {
+            filteredMessageList.setAll(messageList);
+        } else {
+            String lowerCaseFilter = filterText.toLowerCase();
+            filteredMessageList.clear();
+            for (Message message : messageList) {
+                if (message.getSenderUserGUID().toLowerCase().contains(lowerCaseFilter) ||
+                        message.getSubject().toLowerCase().contains(lowerCaseFilter) ||
+                        message.getBody().toLowerCase().contains(lowerCaseFilter)) {
+                    filteredMessageList.add(message);
+                }
+            }
+        }
+    }
+
+    public void sendMessage(List<String> recipientUserEmails, String subject, String body, SendCallback callback) {
+        new Thread(() -> {
+            String messageId = messageApi.sendMessage(recipientUserEmails, subject, body);
+            Platform.runLater(() -> {
+                if (messageId != null) {
+                    callback.onSuccess();
+                } else {
+                    callback.onFailure();
+                }
+            });
+        }).start();
+    }
+
+    public void deleteMessage(Message message, DeleteCallback callback) {
+        new Thread(() -> {
+            boolean success = (messageApi.deleteMessage(message.getGuid()) != null);
+            Platform.runLater(() -> {
+
+                if (!success) {
+                    callback.onFailure();
+                    return;
+                }
+
+                var removedFromMessageList = messageList.remove(message);
+                var removedFromFilteredMessageList = filteredMessageList.remove(message);
+
+                if (!removedFromMessageList && !removedFromFilteredMessageList) {
+                    callback.onFailure();
+                    return;
+                }
+
+                callback.onSuccess();
             });
         }).start();
     }

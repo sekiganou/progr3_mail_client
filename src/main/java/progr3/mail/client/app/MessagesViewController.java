@@ -186,7 +186,9 @@ public class MessagesViewController {
 
     private void setupSearchFilter() {
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            filterMessages(newValue);
+            messageStore.filterMessages(newValue);
+            messagesTableView.setItems(messageStore.getFilteredMessageList());
+            updateMessageCountLabel();
         });
     }
 
@@ -197,27 +199,9 @@ public class MessagesViewController {
                         displayMessageDetails(newValue);
                         newValue = messageStore.setIsNotNew(newValue);
                     }
-                    // messagesTableView.refresh();
-                    // updateMessageCount();
+                    updateMessageCountLabel();
+                    messagesTableView.refresh();
                 });
-    }
-
-    private void filterMessages(String searchTerm) {
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            filteredMessageList.setAll(messageStore.messageList);
-        } else {
-            String lowerCaseFilter = searchTerm.toLowerCase();
-            filteredMessageList.clear();
-            for (Message message : messageStore.messageList) {
-                if (message.getSenderUserGUID().toLowerCase().contains(lowerCaseFilter) ||
-                        message.getSubject().toLowerCase().contains(lowerCaseFilter) ||
-                        message.getBody().toLowerCase().contains(lowerCaseFilter)) {
-                    filteredMessageList.add(message);
-                }
-            }
-        }
-        messagesTableView.setItems(filteredMessageList);
-        updateMessageCount();
     }
 
     private void displayMessageDetails(Message message) {
@@ -255,6 +239,7 @@ public class MessagesViewController {
             public void onSuccess(int messageCount) {
                 statusLabel.setText("Loaded " + messageCount + " message(s)");
                 statusLabel.setStyle("-fx-text-fill: #4CAF50;");
+                messagesTableView.setItems(messageStore.getFilteredMessageList());
             }
 
             @Override
@@ -302,37 +287,32 @@ public class MessagesViewController {
         });
     }
 
-    private void updateMessageCount() {
-        int unreadCount = 0;
-        for (Message msg : messageStore.messageList) {
-            if (messageStore.isNew(msg)) {
-                unreadCount++;
-            }
-        }
-
-        messageCountLabel.setText("Total messages: " + filteredMessageList.size() +
-                (filteredMessageList.size() != messageStore.messageList.size()
-                        ? " (filtered from " + messageStore.messageList.size() + ")"
-                        : "")
+    private void updateMessageCountLabel() {
+        messageCountLabel.setText("Total messages: " + messageStore.getFilteredMessageCount() +
+                (messageStore
+                        .getFilteredMessageCount() != messageStore.getMessageCount()
+                                ? " (filtered from " + messageStore.getMessageCount() + ")"
+                                : "")
                 +
-                " | Unread: " + unreadCount);
+                " | Unread: " + messageStore.getNewMessageCount());
+
     }
 
     private void setupMessageListListener() {
-        messageStore.messageList.addListener((ListChangeListener<Message>) change -> {
+        messageStore.getMessageList().addListener((ListChangeListener<Message>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
                     userCache.updateUserCache(addedMessages);
+                    messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
-                    updateMessageCount();
-                    filterMessages(searchField.getText());
+                    updateMessageCountLabel();
                 }
 
                 if (change.wasRemoved()) {
+                    messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
-                    updateMessageCount();
-                    filterMessages(searchField.getText());
+                    updateMessageCountLabel();
                 }
 
                 // if (change.wasUpdated()) { ... }
@@ -472,21 +452,20 @@ public class MessagesViewController {
 
     @FXML
     private void onDeleteClick() {
-        try {
-            Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-            if (selectedMessage != null) {
-                String response = messageApi.deleteMessage(selectedMessage.getGuid());
-                if (response == null || !response.equals("OK")) {
-                    statusLabel.setText("Failed to delete message");
-                    statusLabel.setStyle("-fx-text-fill: #F44336;");
+        Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
-                    ToastNotification.show("Failed to delete message", ToastNotification.Type.ERROR);
-                    return;
-                }
+        if (selectedMessage == null) {
+            statusLabel.setText("No message selected to delete");
+            statusLabel.setStyle("-fx-text-fill: #F44336;");
 
-                messageStore.messageList.remove(selectedMessage);
-                filterMessages(searchField.getText());
-                updateMessageCount();
+            ToastNotification.show("No message selected to delete", ToastNotification.Type.WARNING);
+            return;
+        }
+
+        messageStore.deleteMessage(selectedMessage, new MessageStore.DeleteCallback() {
+            @Override
+            public void onSuccess() {
+                updateMessageCountLabel();
                 detailBodyArea.clear();
                 detailDateLabel.setText("");
                 detailRecipientsLabel.setText("");
@@ -497,19 +476,16 @@ public class MessagesViewController {
                 statusLabel.setStyle("-fx-text-fill: #4CAF50;");
 
                 ToastNotification.show("Message deleted", ToastNotification.Type.SUCCESS);
-            } else {
-                statusLabel.setText("No message selected to delete");
+            }
+
+            @Override
+            public void onFailure() {
+                statusLabel.setText("Failed to delete message");
                 statusLabel.setStyle("-fx-text-fill: #F44336;");
 
-                ToastNotification.show("No message selected to delete", ToastNotification.Type.WARNING);
+                ToastNotification.show("Failed to delete message", ToastNotification.Type.ERROR);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            statusLabel.setText("Error deleting message");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
-
-            ToastNotification.show("Error deleting message", ToastNotification.Type.ERROR);
-        }
+        });
     }
 
 }
