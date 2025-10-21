@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.util.ToastNotification;

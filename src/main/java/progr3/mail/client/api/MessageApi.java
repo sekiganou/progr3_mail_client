@@ -3,7 +3,6 @@ package progr3.mail.client.api;
 import java.util.Date;
 import java.util.List;
 
-import progr3.mail.client.app.ApiHandler;
 import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.model.Message;
 import progr3.mail.client.model.MailRequest.ForwardMessageBody;

@@ -1,6 +1,5 @@
 package progr3.mail.client.api;
 
-import progr3.mail.client.app.ApiHandler;
 import progr3.mail.client.model.Response;
 
 public class HealthApi {

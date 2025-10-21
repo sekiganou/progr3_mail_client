@@ -1,4 +1,4 @@
-package progr3.mail.client.app;
+package progr3.mail.client.api;
 
 import java.net.Socket;
 

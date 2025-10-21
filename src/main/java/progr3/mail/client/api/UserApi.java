@@ -2,7 +2,6 @@ package progr3.mail.client.api;
 
 import java.util.List;
 
-import progr3.mail.client.app.ApiHandler;
 import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.model.Request.Command;
 import progr3.mail.client.model.User;
