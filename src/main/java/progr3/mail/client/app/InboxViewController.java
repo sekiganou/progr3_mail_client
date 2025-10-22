@@ -6,8 +6,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
@@ -19,17 +17,17 @@ import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.model.Message;
 import progr3.mail.client.model.User;
 import progr3.mail.client.models.MessageStore;
+import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.UserCache;
 import progr3.mail.client.util.ToastNotification;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
-public class MessagesViewController {
+public class InboxViewController {
 
     @FXML
     private Label userLabel;
@@ -82,6 +80,7 @@ public class MessagesViewController {
     private HealthApi healthApi;
     private UserCache userCache;
     private MessageStore messageStore;
+    private NavigationManager navigationManager;
 
     public ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
 
@@ -90,7 +89,8 @@ public class MessagesViewController {
 
     private static final int POLLING_INTERVAL_SECONDS = 30;
 
-    public MessagesViewController() {
+    public InboxViewController() {
+        this.navigationManager = new NavigationManager();
         this.apiHandler = new ApiHandler();
         this.messageApi = new MessageApi(apiHandler);
         this.userApi = new UserApi(apiHandler);
@@ -329,125 +329,107 @@ public class MessagesViewController {
 
     @FXML
     private void onLogoutClick() {
-        userApi.Logout();
-        ToastNotification.show("Logged out successfully", ToastNotification.Type.INFO);
+        var success = userApi.Logout();
 
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(
-                    getClass().getResource("login-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 400, 300);
-
-            Stage stage = (Stage) userLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - Login");
-            stage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
-            ToastNotification.show("Error loading login view",
-                    ToastNotification.Type.ERROR);
+        if (!success) {
+            ToastNotification.show("Logout failed. Please try again.", ToastNotification.Type.ERROR);
+            return;
         }
+
+        if (success) {
+            ToastNotification.show("Logged out successfully", ToastNotification.Type.INFO);
+            navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(), navigationManager.getLoginView());
+        }
+
     }
 
     @FXML
     private void onComposeClick() {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(
-                    getClass().getResource("send-message-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 700, 600);
-
-            Stage stage = (Stage) userLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - Compose Message");
-            stage.setScene(scene);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            ToastNotification.show("Error loading compose view",
-                    ToastNotification.Type.ERROR);
-        }
+        navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(),
+                navigationManager.getComposeView());
     }
 
-    private void openSendMessageViewWithPrefill(String to, String subject, String body, String title) {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(
-                    getClass().getResource("send-message-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 700, 600);
+    private void openSendMessageViewWithPrefill(String header, String to, String subject, String body) {
+        ComposeViewController controller = navigationManager.navigateTo(
+                (Stage) userLabel.getScene().getWindow(),
+                navigationManager.getComposeView());
 
-            SendMessageViewController controller = fxmlLoader.getController();
-            controller.fromLabel.setText(Auth.getUser().getEmail());
-            controller.toField.setText(to);
-            controller.subjectField.setText(subject);
-            controller.bodyArea.setText(body);
-
-            Stage stage = (Stage) userLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - " + title);
-            stage.setScene(scene);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            statusLabel.setText("Error loading " + title.toLowerCase() + " view");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
-            ToastNotification.show("Error loading " + title.toLowerCase() + " view",
-                    ToastNotification.Type.ERROR);
+        if (controller != null) {
+            controller.prefillForm(header, to, subject, body);
+        } else {
+            ToastNotification.show("Error opening compose view", ToastNotification.Type.ERROR);
         }
     }
 
     @FXML
     private void onReplyClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-        if (selectedMessage != null) {
-            User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
-            if (sender != null) {
-                String to = sender.getEmail();
-                String subject = selectedMessage.getSubject();
-                if (!subject.toLowerCase().startsWith("re:")) {
-                    subject = "Re: " + subject;
-                }
-                String body = "\n\n--- On "
-                        + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
-                        ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
-                openSendMessageViewWithPrefill(to, subject, body, "Reply Message");
+        if (selectedMessage == null) {
+            ToastNotification.show("No message selected to reply", ToastNotification.Type.WARNING);
+            return;
+        }
+
+        User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
+        if (sender != null) {
+            String to = sender.getEmail();
+            String subject = selectedMessage.getSubject();
+            if (!subject.toLowerCase().startsWith("re:")) {
+                subject = "Re: " + subject;
             }
+            String body = "\n\n--- On "
+                    + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
+                    ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
+            openSendMessageViewWithPrefill("Reply Message", to, subject, body);
         }
     }
 
     @FXML
     private void onReplyAllClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-        if (selectedMessage != null) {
-            User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
-            if (sender != null) {
-                var recipients = new ArrayList<String>();
-                recipients.add(sender.getEmail());
-                selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
-                    var user = userCache.getUserById(guid);
-                    if (user != null && !user.getEmail().equals(Auth.getUser().getEmail())
-                            && !user.getEmail().equals(sender.getEmail()))
-                        recipients.add(user.getEmail());
-                });
-                String to = String.join(", ", recipients);
-                String subject = selectedMessage.getSubject();
-                if (!subject.toLowerCase().startsWith("re:"))
-                    subject = "Re: " + subject;
 
-                String body = "\n\n--- On "
-                        + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
-                        ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
-                openSendMessageViewWithPrefill(to, subject, body, "Reply All Message");
-            }
+        if (selectedMessage == null) {
+            ToastNotification.show("No message selected to reply all", ToastNotification.Type.WARNING);
+            return;
+        }
+
+        User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
+        if (sender != null) {
+            var recipients = new ArrayList<String>();
+            recipients.add(sender.getEmail());
+            selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
+                var user = userCache.getUserById(guid);
+                if (user != null && !user.getEmail().equals(Auth.getUser().getEmail())
+                        && !user.getEmail().equals(sender.getEmail()))
+                    recipients.add(user.getEmail());
+            });
+            String to = String.join(", ", recipients);
+            String subject = selectedMessage.getSubject();
+            if (!subject.toLowerCase().startsWith("re:"))
+                subject = "Re: " + subject;
+
+            String body = "\n\n--- On "
+                    + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
+                    ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
+            openSendMessageViewWithPrefill("Reply All Message", to, subject, body);
         }
     }
 
     @FXML
     private void onForwardClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
-        if (selectedMessage != null) {
-            String subject = "Fwd: " + selectedMessage.getSubject();
-            String body = "\n\n--- Forwarded message ---\nFrom: " +
-                    userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
-                    userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
-                    formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
-                    selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
-            openSendMessageViewWithPrefill("", subject, body, "Forward Message");
+
+        if (selectedMessage == null) {
+            ToastNotification.show("No message selected to forward", ToastNotification.Type.WARNING);
+            return;
         }
+
+        String subject = "Fwd: " + selectedMessage.getSubject();
+        String body = "\n\n--- Forwarded message ---\nFrom: " +
+                userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
+                userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
+                formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
+                selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
+        openSendMessageViewWithPrefill("Forward Message", "", subject, body);
     }
 
     @FXML

@@ -2,8 +2,6 @@ package progr3.mail.client.app;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -11,12 +9,14 @@ import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.hooks.Auth;
+import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.util.ToastNotification;
-
-import java.io.IOException;
 import java.util.List;
 
-public class SendMessageViewController {
+public class ComposeViewController {
+
+    @FXML
+    public Label headerLabel;
 
     @FXML
     public Label fromLabel;
@@ -36,10 +36,12 @@ public class SendMessageViewController {
     @FXML
     private Label charCountLabel;
 
+    private NavigationManager navigationManager;
     private ApiHandler apiHandler;
     private MessageApi messageApi;
 
-    public SendMessageViewController() {
+    public ComposeViewController() {
+        this.navigationManager = new NavigationManager();
         this.apiHandler = new ApiHandler();
         this.messageApi = new MessageApi(apiHandler);
     }
@@ -49,6 +51,26 @@ public class SendMessageViewController {
         setupUserInfo();
         setupCharacterCounter();
         statusLabel.setText("");
+    }
+
+    public void prefillForm(String header, String to, String subject, String body) {
+        if (header != null && !header.isEmpty()) {
+            headerLabel.setText(header);
+        }
+
+        if (to != null && !to.isEmpty()) {
+            toField.setText(to);
+        }
+        if (subject != null && !subject.isEmpty()) {
+            subjectField.setText(subject);
+        }
+        if (body != null && !body.isEmpty()) {
+            bodyArea.setText(body);
+        }
+        // Set the from field with current user
+        if (Auth.getUser() != null) {
+            fromLabel.setText(Auth.getUser().getEmail());
+        }
     }
 
     private void setupUserInfo() {
@@ -134,7 +156,6 @@ public class SendMessageViewController {
                 } else {
                     statusLabel.setText("Failed to send message");
                     statusLabel.setStyle("-fx-text-fill: #F44336;");
-                    // Toast notification already shown by ApiHandler
                 }
             });
         }).start();
@@ -155,18 +176,7 @@ public class SendMessageViewController {
 
     @FXML
     private void onBackClick() {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(
-                    getClass().getResource("messages-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 1000, 700);
-
-            Stage stage = (Stage) fromLabel.getScene().getWindow();
-            stage.setTitle("Mail Client - Messages");
-            stage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
-            ToastNotification.show("Error loading messages view",
-                    ToastNotification.Type.ERROR);
-        }
+        Stage stage = (Stage) fromLabel.getScene().getWindow();
+        navigationManager.navigateTo(stage, navigationManager.getInboxView());
     }
 }

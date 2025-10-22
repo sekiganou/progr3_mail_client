@@ -20,9 +20,11 @@ public class UserApi {
         return user;
     }
 
-    public void Logout() {
+    public boolean Logout() {
         if (Auth.isAuthenticated())
             Auth.clearAuth();
+
+        return !Auth.isAuthenticated();
     }
 
     public User[] getUsers(List<String> userIds) {

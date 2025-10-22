@@ -1,20 +1,16 @@
 package progr3.mail.client.app;
 
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
+import progr3.mail.client.models.NavigationManager;
 
 import java.io.IOException;
 
 public class MailClientApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(
-                MailClientApplication.class.getResource("login-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 400, 300);
-        stage.setTitle("Mail Client - Login");
-        stage.setScene(scene);
+        NavigationManager navigationManager = new NavigationManager();
+        navigationManager.navigateTo(stage, navigationManager.getLoginView());
         stage.show();
     }
 
