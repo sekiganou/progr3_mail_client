@@ -15,6 +15,7 @@ import progr3.mail.client.model.Message;
 import progr3.mail.client.model.User;
 import progr3.mail.client.models.AuthStore;
 import progr3.mail.client.models.DateFormatManager;
+import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.UserCache;
@@ -68,10 +69,10 @@ public class InboxViewController {
     @FXML
     private Circle connectionIndicator;
 
-    private HealthApi healthApi;
     private UserCache userCache;
     private MessageStore messageStore;
     private AuthStore authStore;
+    private HealthStore healthStore;
     private NavigationManager navigationManager;
     private static final int POLLING_INTERVAL_SECONDS = 30;
 
@@ -86,7 +87,8 @@ public class InboxViewController {
         this.userCache = new UserCache(userApi);
         this.authStore = new AuthStore(userApi);
 
-        this.healthApi = new HealthApi(apiHandler);
+        var healthApi = new HealthApi(apiHandler);
+        this.healthStore = new HealthStore(healthApi);
     }
 
     @FXML
@@ -97,8 +99,9 @@ public class InboxViewController {
         setupMessageSelection();
 
         setupMessageListListener();
+        setupHealthListener();
 
-        checkServerHealth();
+        // checkHealth();
         loadMessages();
         loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
     }
@@ -206,7 +209,7 @@ public class InboxViewController {
                 e.printStackTrace();
             }
             Platform.runLater(() -> {
-                checkServerHealth();
+                // checkHealth();
                 loadNewMessages();
                 loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
             });
@@ -249,24 +252,9 @@ public class InboxViewController {
         });
     }
 
-    private void checkServerHealth() {
-        new Thread(() -> {
-            boolean isHealthy = healthApi.isServerHealthy();
-            updateConnectionIndicator(isHealthy);
-        }).start();
-    }
-
-    private void updateConnectionIndicator(boolean isConnected) {
-        Platform.runLater(() -> {
-            if (isConnected) {
-                connectionIndicator.setFill(javafx.scene.paint.Color.LIMEGREEN);
-                connectionIndicator.setStroke(javafx.scene.paint.Color.DARKGREEN);
-            } else {
-                connectionIndicator.setFill(javafx.scene.paint.Color.RED);
-                connectionIndicator.setStroke(javafx.scene.paint.Color.DARKRED);
-            }
-        });
-    }
+    // private void checkHealth() {
+    // healthStore.checkHealth();
+    // }
 
     private void updateMessageCountLabel() {
         messageCountLabel.setText("Total messages: " + messageStore.getFilteredMessageCount() +
@@ -277,6 +265,18 @@ public class InboxViewController {
                 +
                 " | Unread: " + messageStore.getNewMessageCount());
 
+    }
+
+    private void setupHealthListener() {
+        healthStore.isServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> {
+                if (newValue) {
+                    connectionIndicator.setFill(javafx.scene.paint.Color.LIMEGREEN);
+                } else {
+                    connectionIndicator.setFill(javafx.scene.paint.Color.RED);
+                }
+            });
+        });
     }
 
     private void setupMessageListListener() {

@@ -5,7 +5,6 @@ import progr3.mail.client.model.User;
 
 public class AuthStore {
     private static User user;
-    private static boolean isAuthenticated = false;
     private UserApi userApi;
 
     public AuthStore(UserApi userApi) {
@@ -20,10 +19,8 @@ public class AuthStore {
 
     public void login(String email, AuthCallback callback) {
         new Thread(() -> {
-            User user = userApi.login(email);
+            user = userApi.login(email);
             if (user != null) {
-                AuthStore.isAuthenticated = true;
-                AuthStore.user = user;
                 callback.onSuccess(user);
             } else {
                 callback.onFailure();
@@ -51,11 +48,10 @@ public class AuthStore {
     }
 
     public static boolean isAuthenticated() {
-        return AuthStore.isAuthenticated && user != null;
+        return user != null;
     }
 
     public static void clearAuth() {
         AuthStore.user = null;
-        AuthStore.isAuthenticated = false;
     }
 }
