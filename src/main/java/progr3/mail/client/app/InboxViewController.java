@@ -2,9 +2,7 @@ package progr3.mail.client.app;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.shape.Circle;
@@ -13,18 +11,14 @@ import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.api.UserApi;
-import progr3.mail.client.hooks.Auth;
 import progr3.mail.client.model.Message;
 import progr3.mail.client.model.User;
+import progr3.mail.client.models.AuthStore;
+import progr3.mail.client.models.DateFormatManager;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.UserCache;
 import progr3.mail.client.util.ToastNotification;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class InboxViewController {
@@ -74,29 +68,25 @@ public class InboxViewController {
     @FXML
     private Circle connectionIndicator;
 
-    private ApiHandler apiHandler;
-    private MessageApi messageApi;
-    private UserApi userApi;
     private HealthApi healthApi;
     private UserCache userCache;
     private MessageStore messageStore;
+    private AuthStore authStore;
     private NavigationManager navigationManager;
-
-    public ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-
     private static final int POLLING_INTERVAL_SECONDS = 30;
 
     public InboxViewController() {
         this.navigationManager = new NavigationManager();
-        this.apiHandler = new ApiHandler();
-        this.messageApi = new MessageApi(apiHandler);
-        this.userApi = new UserApi(apiHandler);
-        this.healthApi = new HealthApi(apiHandler);
-        this.userCache = new UserCache(userApi);
+        var apiHandler = new ApiHandler();
+
+        var messageApi = new MessageApi(apiHandler);
         this.messageStore = new MessageStore(messageApi);
+
+        var userApi = new UserApi(apiHandler);
+        this.userCache = new UserCache(userApi);
+        this.authStore = new AuthStore(userApi);
+
+        this.healthApi = new HealthApi(apiHandler);
     }
 
     @FXML
@@ -114,8 +104,8 @@ public class InboxViewController {
     }
 
     private void setupUserInfo() {
-        if (Auth.isAuthenticated()) {
-            userLabel.setText("Logged in as: " + Auth.getUser().getEmail());
+        if (AuthStore.isAuthenticated()) {
+            userLabel.setText("Logged in as: " + AuthStore.getUser().getEmail());
         }
     }
 
@@ -154,7 +144,7 @@ public class InboxViewController {
         // Timestamp column
         timestampColumn.setCellValueFactory(cellData -> {
             String timestamp = cellData.getValue().getDate().toString();
-            String formattedTime = formatTimestamp(DATE_FORMATTER, timestamp);
+            String formattedTime = DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER, timestamp);
             return new SimpleStringProperty(formattedTime);
         });
 
@@ -172,16 +162,6 @@ public class InboxViewController {
                 }
             }
         });
-    }
-
-    private String formatTimestamp(DateTimeFormatter formatter, String timestamp) {
-        try {
-            Instant instant = Instant.parse(timestamp);
-            LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-            return localDateTime.format(formatter);
-        } catch (Exception e) {
-            return timestamp;
-        }
     }
 
     private void setupSearchFilter() {
@@ -213,7 +193,8 @@ public class InboxViewController {
         detailSenderLabel.setText(userCache.getUserById(message.getSenderUserGUID()).getName() + " <" +
                 userCache.getUserById(message.getSenderUserGUID()).getEmail() + ">");
         detailSubjectLabel.setText(message.getSubject());
-        detailDateLabel.setText(formatTimestamp(DATE_TIME_FORMATTER, message.getDate().toString()));
+        detailDateLabel.setText(
+                DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER, message.getDate().toString()));
         detailBodyArea.setText(message.getBody());
     }
 
@@ -329,18 +310,20 @@ public class InboxViewController {
 
     @FXML
     private void onLogoutClick() {
-        var success = userApi.Logout();
+        var success = authStore.logout();
 
         if (!success) {
-            ToastNotification.show("Logout failed. Please try again.", ToastNotification.Type.ERROR);
+            ToastNotification.show("Logout failed. Please try again.",
+                    ToastNotification.Type.ERROR);
             return;
         }
 
         if (success) {
-            ToastNotification.show("Logged out successfully", ToastNotification.Type.INFO);
-            navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(), navigationManager.getLoginView());
+            ToastNotification.show("Logged out successfully",
+                    ToastNotification.Type.INFO);
+            navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(),
+                    navigationManager.getLoginView());
         }
-
     }
 
     @FXML
@@ -377,7 +360,9 @@ public class InboxViewController {
                 subject = "Re: " + subject;
             }
             String body = "\n\n--- On "
-                    + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
+                    + DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER,
+                            selectedMessage.getDate().toString())
+                    +
                     ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
             openSendMessageViewWithPrefill("Reply Message", to, subject, body);
         }
@@ -398,7 +383,7 @@ public class InboxViewController {
             recipients.add(sender.getEmail());
             selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
                 var user = userCache.getUserById(guid);
-                if (user != null && !user.getEmail().equals(Auth.getUser().getEmail())
+                if (user != null && !user.getEmail().equals(AuthStore.getUser().getEmail())
                         && !user.getEmail().equals(sender.getEmail()))
                     recipients.add(user.getEmail());
             });
@@ -408,7 +393,9 @@ public class InboxViewController {
                 subject = "Re: " + subject;
 
             String body = "\n\n--- On "
-                    + formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) +
+                    + DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER,
+                            selectedMessage.getDate().toString())
+                    +
                     ", " + sender.getName() + " wrote: ---\n" + selectedMessage.getBody();
             openSendMessageViewWithPrefill("Reply All Message", to, subject, body);
         }
@@ -427,7 +414,9 @@ public class InboxViewController {
         String body = "\n\n--- Forwarded message ---\nFrom: " +
                 userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
                 userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
-                formatTimestamp(DATE_TIME_FORMATTER, selectedMessage.getDate().toString()) + "\nSubject: " +
+                DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER,
+                        selectedMessage.getDate().toString())
+                + "\nSubject: " +
                 selectedMessage.getSubject() + "\n\n" + selectedMessage.getBody();
         openSendMessageViewWithPrefill("Forward Message", "", subject, body);
     }

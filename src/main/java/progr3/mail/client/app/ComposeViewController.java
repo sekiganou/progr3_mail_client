@@ -8,7 +8,9 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.MessageApi;
-import progr3.mail.client.hooks.Auth;
+import progr3.mail.client.models.AuthStore;
+import progr3.mail.client.models.EmailValidator;
+import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.util.ToastNotification;
 import java.util.List;
@@ -37,13 +39,14 @@ public class ComposeViewController {
     private Label charCountLabel;
 
     private NavigationManager navigationManager;
-    private ApiHandler apiHandler;
-    private MessageApi messageApi;
+    private MessageStore messageStore;
 
     public ComposeViewController() {
         this.navigationManager = new NavigationManager();
-        this.apiHandler = new ApiHandler();
-        this.messageApi = new MessageApi(apiHandler);
+
+        var apiHandler = new ApiHandler();
+        var messageApi = new MessageApi(apiHandler);
+        this.messageStore = new MessageStore(messageApi);
     }
 
     @FXML
@@ -68,14 +71,14 @@ public class ComposeViewController {
             bodyArea.setText(body);
         }
         // Set the from field with current user
-        if (Auth.getUser() != null) {
-            fromLabel.setText(Auth.getUser().getEmail());
+        if (AuthStore.getUser() != null) {
+            fromLabel.setText(AuthStore.getUser().getEmail());
         }
     }
 
     private void setupUserInfo() {
-        if (Auth.isAuthenticated()) {
-            fromLabel.setText(Auth.getUser().getEmail());
+        if (AuthStore.isAuthenticated()) {
+            fromLabel.setText(AuthStore.getUser().getEmail());
         }
     }
 
@@ -118,10 +121,11 @@ public class ComposeViewController {
         String[] recipients = to.split(",");
         for (int i = 0; i < recipients.length; i++) {
             recipients[i] = recipients[i].trim();
-            if (!recipients[i].contains("@")) {
-                statusLabel.setText("Invalid email format: " + recipients[i]);
+            var recipient = recipients[i];
+            if (!EmailValidator.isValidEmail(recipient)) {
+                statusLabel.setText("Invalid email format: " + recipient);
                 statusLabel.setStyle("-fx-text-fill: #F44336;");
-                ToastNotification.show("Invalid email: " + recipients[i],
+                ToastNotification.show("Invalid email: " + recipient,
                         ToastNotification.Type.WARNING);
                 return;
             }
@@ -131,11 +135,10 @@ public class ComposeViewController {
         statusLabel.setText("Sending message...");
         statusLabel.setStyle("-fx-text-fill: #2196F3;");
 
-        new Thread(() -> {
-            boolean success = messageApi.sendMessage(List.of(recipients), subject, body) != null;
-
-            Platform.runLater(() -> {
-                if (success) {
+        messageStore.sendMessage(List.of(recipients), subject, body, new MessageStore.SendCallback() {
+            @Override
+            public void onSuccess() {
+                Platform.runLater(() -> {
                     statusLabel.setText("Message sent successfully!");
                     statusLabel.setStyle("-fx-text-fill: #4CAF50;");
                     ToastNotification.show("Message sent to " + recipients.length +
@@ -148,17 +151,22 @@ public class ComposeViewController {
                     new Thread(() -> {
                         try {
                             Thread.sleep(500);
-                            Platform.runLater(this::onBackClick);
+                            Platform.runLater(ComposeViewController.this::onBackClick);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }).start();
-                } else {
+                });
+            }
+
+            @Override
+            public void onFailure() {
+                Platform.runLater(() -> {
                     statusLabel.setText("Failed to send message");
                     statusLabel.setStyle("-fx-text-fill: #F44336;");
-                }
-            });
-        }).start();
+                });
+            }
+        });
     }
 
     @FXML

@@ -1,12 +1,14 @@
 package progr3.mail.client.app;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.UserApi;
-import progr3.mail.client.hooks.Auth;
+import progr3.mail.client.models.AuthStore;
+import progr3.mail.client.models.EmailValidator;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.util.ToastNotification;
 
@@ -18,13 +20,13 @@ public class LoginViewController {
     @FXML
     private Label statusLabel;
 
+    private AuthStore authStore;
     private NavigationManager navigationManager;
-    private ApiHandler apiHandler;
-    private UserApi userApi;
 
     public LoginViewController() {
-        this.apiHandler = new ApiHandler();
-        this.userApi = new UserApi(apiHandler);
+        var apiHandler = new ApiHandler();
+        var userApi = new UserApi(apiHandler);
+        this.authStore = new AuthStore(userApi);
         this.navigationManager = new NavigationManager();
     }
 
@@ -43,7 +45,7 @@ public class LoginViewController {
             return;
         }
 
-        if (!email.contains("@")) {
+        if (!EmailValidator.isValidEmail(email)) {
             statusLabel.setText("Please enter a valid email address");
             statusLabel.setStyle("-fx-text-fill: #F44336;");
             return;
@@ -52,23 +54,26 @@ public class LoginViewController {
         statusLabel.setText("Logging in...");
         statusLabel.setStyle("-fx-text-fill: #2196F3;");
 
-        // Perform login in background thread
-        new Thread(() -> {
-            var user = userApi.login(email);
-
-            javafx.application.Platform.runLater(() -> {
-                if (user != null && Auth.isAuthenticated()) {
+        authStore.login(email, new AuthStore.AuthCallback() {
+            @Override
+            public void onSuccess(progr3.mail.client.model.User user) {
+                Platform.runLater(() -> {
                     ToastNotification.show("Login successful! Welcome " +
                             (user.getName() != null ? user.getName() : user.getEmail()),
                             ToastNotification.Type.SUCCESS);
                     navigationManager.navigateTo((Stage) emailField.getScene().getWindow(),
                             navigationManager.getInboxView());
-                } else {
+                });
+            }
+
+            @Override
+            public void onFailure() {
+                Platform.runLater(() -> {
                     statusLabel.setText("Login failed. Please try again.");
                     statusLabel.setStyle("-fx-text-fill: #F44336;");
-                }
-            });
-        }).start();
+                });
+            }
+        });
     }
 
 }

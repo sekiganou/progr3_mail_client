@@ -78,7 +78,11 @@ public class MessageStore {
     }
 
     public void loadMessages(LoadCallback callback) {
+        if (!AuthStore.isAuthenticated())
+            return;
+
         new Thread(() -> {
+
             Message[] messages = messageApi.getMessages();
 
             Platform.runLater(() -> {
@@ -97,6 +101,9 @@ public class MessageStore {
     }
 
     public void loadNewMessages(LoadCallback callback) {
+        if (!AuthStore.isAuthenticated())
+            return;
+
         var latestTimestamp = messageList.stream()
                 .map(Message::getDate)
                 .max(new Comparator<Date>() {
@@ -141,6 +148,9 @@ public class MessageStore {
     }
 
     public void sendMessage(List<String> recipientUserEmails, String subject, String body, SendCallback callback) {
+        if (!AuthStore.isAuthenticated())
+            return;
+
         new Thread(() -> {
             String messageId = messageApi.sendMessage(recipientUserEmails, subject, body);
             Platform.runLater(() -> {
@@ -154,6 +164,9 @@ public class MessageStore {
     }
 
     public void deleteMessage(Message message, DeleteCallback callback) {
+        if (!AuthStore.isAuthenticated())
+            return;
+
         new Thread(() -> {
             boolean success = (messageApi.deleteMessage(message.getGuid()) != null);
             Platform.runLater(() -> {
