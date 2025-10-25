@@ -80,15 +80,15 @@ public class InboxViewController {
         this.navigationManager = new NavigationManager();
         var apiHandler = new ApiHandler();
 
+        var healthApi = new HealthApi(apiHandler);
+        this.healthStore = new HealthStore(healthApi);
+
         var messageApi = new MessageApi(apiHandler);
-        this.messageStore = new MessageStore(messageApi);
+        this.messageStore = new MessageStore(messageApi, healthStore);
 
         var userApi = new UserApi(apiHandler);
         this.userCache = new UserCache(userApi);
-        this.authStore = new AuthStore(userApi);
-
-        var healthApi = new HealthApi(apiHandler);
-        this.healthStore = new HealthStore(healthApi);
+        this.authStore = new AuthStore(userApi, healthStore);
     }
 
     @FXML

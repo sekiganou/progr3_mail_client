@@ -6,9 +6,11 @@ import progr3.mail.client.model.User;
 public class AuthStore {
     private static User user;
     private UserApi userApi;
+    private HealthStore healthStore;
 
-    public AuthStore(UserApi userApi) {
+    public AuthStore(UserApi userApi, HealthStore healthStore) {
         this.userApi = userApi;
+        this.healthStore = healthStore;
     }
 
     public interface AuthCallback {
@@ -23,6 +25,7 @@ public class AuthStore {
             if (user != null) {
                 callback.onSuccess(user);
             } else {
+                healthStore.checkHealth();
                 callback.onFailure();
             }
         }).start();

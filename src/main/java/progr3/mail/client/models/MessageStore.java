@@ -11,13 +11,15 @@ import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.model.Message;
 
 public class MessageStore {
+    private HealthStore healthStore;
     private ObservableList<Message> messageList = FXCollections.observableArrayList();
     private ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
 
-    public MessageStore(MessageApi messageApi) {
+    public MessageStore(MessageApi messageApi, HealthStore healthStore) {
         this.messageApi = messageApi;
+        this.healthStore = healthStore;
     }
 
     public interface LoadCallback {
@@ -94,6 +96,7 @@ public class MessageStore {
                     messageList.addAll(messages);
                     callback.onSuccess(messages.length);
                 } else {
+                    healthStore.checkHealth();
                     callback.onFailure();
                 }
             });
@@ -125,6 +128,7 @@ public class MessageStore {
                     // filterMessages("");
                     callback.onSuccess(messages.length);
                 } else {
+                    healthStore.checkHealth();
                     callback.onFailure();
                 }
             });
@@ -157,6 +161,7 @@ public class MessageStore {
                 if (messageId != null) {
                     callback.onSuccess();
                 } else {
+                    healthStore.checkHealth();
                     callback.onFailure();
                 }
             });
@@ -172,6 +177,7 @@ public class MessageStore {
             Platform.runLater(() -> {
 
                 if (!success) {
+                    healthStore.checkHealth();
                     callback.onFailure();
                     return;
                 }
@@ -180,6 +186,7 @@ public class MessageStore {
                 var removedFromFilteredMessageList = filteredMessageList.remove(message);
 
                 if (!removedFromMessageList && !removedFromFilteredMessageList) {
+                    healthStore.checkHealth();
                     callback.onFailure();
                     return;
                 }
@@ -188,4 +195,5 @@ public class MessageStore {
             });
         }).start();
     }
+
 }

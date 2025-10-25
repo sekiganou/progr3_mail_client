@@ -37,8 +37,8 @@ public class LoginViewController {
         var apiHandler = new ApiHandler();
         var userApi = new UserApi(apiHandler);
         var healthApi = new HealthApi(apiHandler);
-        this.authStore = new AuthStore(userApi);
         this.healthStore = new HealthStore(healthApi);
+        this.authStore = new AuthStore(userApi, healthStore);
         this.navigationManager = new NavigationManager();
     }
 
