@@ -18,6 +18,7 @@ import progr3.mail.client.models.DateFormatManager;
 import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
+import progr3.mail.client.models.StatusManager;
 import progr3.mail.client.models.UserCache;
 import progr3.mail.client.util.ToastNotification;
 import java.util.ArrayList;
@@ -100,10 +101,24 @@ public class InboxViewController {
 
         setupMessageListListener();
         setupHealthListener();
+        setupStatusListener();
 
-        // checkHealth();
         loadMessages();
         loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
+    }
+
+    private void setupStatusListener() {
+        StatusManager.getStatusLabelText().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> statusLabel.setText(newValue));
+        });
+
+        StatusManager.getStatusLabelStyle().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> statusLabel.setStyle(newValue));
+        });
+
+        StatusManager.getConnectionLabelStyle().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> connectionIndicator.setStyle(newValue));
+        });
     }
 
     private void setupUserInfo() {
@@ -209,7 +224,6 @@ public class InboxViewController {
                 e.printStackTrace();
             }
             Platform.runLater(() -> {
-                // checkHealth();
                 loadNewMessages();
                 loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
             });
@@ -221,15 +235,13 @@ public class InboxViewController {
         messageStore.loadMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
-                statusLabel.setText("Loaded " + messageCount + " message(s)");
-                statusLabel.setStyle("-fx-text-fill: #4CAF50;");
+                StatusManager.setStatus("Loaded " + messageCount + " message(s)", StatusManager.Type.SUCCESS);
                 messagesTableView.setItems(messageStore.getFilteredMessageList());
             }
 
             @Override
             public void onFailure() {
-                statusLabel.setText("Failed to load messages");
-                statusLabel.setStyle("-fx-text-fill: #F44336;");
+                StatusManager.setStatus("Failed to load messages", StatusManager.Type.ERROR);
                 ToastNotification.show("Failed to load messages", ToastNotification.Type.ERROR);
             }
         });
@@ -239,22 +251,22 @@ public class InboxViewController {
         messageStore.loadNewMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
-                statusLabel.setText("Loaded " + messageCount + " new message(s)");
-                statusLabel.setStyle("-fx-text-fill: #4CAF50;");
+                if (messageCount == 0) {
+                    StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
+                    return;
+                }
+
+                StatusManager.setStatus("Loaded " + messageCount + " new message(s)", StatusManager.Type.SUCCESS);
                 ToastNotification.show("Loaded " + messageCount + " new message(s)", ToastNotification.Type.SUCCESS);
             }
 
             @Override
             public void onFailure() {
-                statusLabel.setText("No new messages");
-                statusLabel.setStyle("-fx-text-fill: #2196F3;");
+                StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
+                ToastNotification.show("Failed to load new messages", ToastNotification.Type.ERROR);
             }
         });
     }
-
-    // private void checkHealth() {
-    // healthStore.checkHealth();
-    // }
 
     private void updateMessageCountLabel() {
         messageCountLabel.setText("Total messages: " + messageStore.getFilteredMessageCount() +
@@ -268,12 +280,13 @@ public class InboxViewController {
     }
 
     private void setupHealthListener() {
-        healthStore.isServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
+        healthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
                 if (newValue) {
-                    connectionIndicator.setFill(javafx.scene.paint.Color.LIMEGREEN);
+                    // text is set but there is not label in the UI for it
+                    StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);
                 } else {
-                    connectionIndicator.setFill(javafx.scene.paint.Color.RED);
+                    StatusManager.setConnectionStatus("Server is unreachable", StatusManager.Type.ERROR);
                 }
             });
         });
@@ -348,6 +361,7 @@ public class InboxViewController {
     private void onReplyClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
         if (selectedMessage == null) {
+            StatusManager.setStatus("No message selected to reply", StatusManager.Type.WARNING);
             ToastNotification.show("No message selected to reply", ToastNotification.Type.WARNING);
             return;
         }
@@ -373,6 +387,7 @@ public class InboxViewController {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
         if (selectedMessage == null) {
+            StatusManager.setStatus("No message selected to reply all", StatusManager.Type.WARNING);
             ToastNotification.show("No message selected to reply all", ToastNotification.Type.WARNING);
             return;
         }
@@ -406,6 +421,7 @@ public class InboxViewController {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
         if (selectedMessage == null) {
+            StatusManager.setStatus("No message selected to forward", StatusManager.Type.WARNING);
             ToastNotification.show("No message selected to forward", ToastNotification.Type.WARNING);
             return;
         }
@@ -426,9 +442,7 @@ public class InboxViewController {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
         if (selectedMessage == null) {
-            statusLabel.setText("No message selected to delete");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
-
+            StatusManager.setStatus("No message selected to delete", StatusManager.Type.WARNING);
             ToastNotification.show("No message selected to delete", ToastNotification.Type.WARNING);
             return;
         }
@@ -443,17 +457,13 @@ public class InboxViewController {
                 detailSenderLabel.setText("");
                 detailSubjectLabel.setText("");
 
-                statusLabel.setText("Message deleted successfully");
-                statusLabel.setStyle("-fx-text-fill: #4CAF50;");
-
-                ToastNotification.show("Message deleted", ToastNotification.Type.SUCCESS);
+                StatusManager.setStatus("Message deleted successfully", StatusManager.Type.SUCCESS);
+                ToastNotification.show("Message deleted successfully", ToastNotification.Type.SUCCESS);
             }
 
             @Override
             public void onFailure() {
-                statusLabel.setText("Failed to delete message");
-                statusLabel.setStyle("-fx-text-fill: #F44336;");
-
+                StatusManager.setStatus("Failed to delete message", StatusManager.Type.ERROR);
                 ToastNotification.show("Failed to delete message", ToastNotification.Type.ERROR);
             }
         });

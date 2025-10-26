@@ -14,7 +14,9 @@ import progr3.mail.client.models.EmailValidator;
 import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
+import progr3.mail.client.models.StatusManager;
 import progr3.mail.client.util.ToastNotification;
+
 import java.util.List;
 
 public class ComposeViewController {
@@ -57,7 +59,17 @@ public class ComposeViewController {
     public void initialize() {
         setupUserInfo();
         setupCharacterCounter();
-        statusLabel.setText("");
+        setupStatusListener();
+    }
+
+    private void setupStatusListener() {
+        StatusManager.getStatusLabelText().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> statusLabel.setText(newValue));
+        });
+
+        StatusManager.getStatusLabelStyle().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> statusLabel.setStyle(newValue));
+        });
     }
 
     public void prefillForm(String header, String to, String subject, String body) {
@@ -101,22 +113,19 @@ public class ComposeViewController {
         String body = bodyArea.getText().trim();
 
         if (to.isEmpty()) {
-            statusLabel.setText("Please enter recipient email(s)");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
+            StatusManager.setStatus("Please enter recipient email(s)", StatusManager.Type.WARNING);
             ToastNotification.show("Recipient email is required", ToastNotification.Type.WARNING);
             return;
         }
 
         if (subject.isEmpty()) {
-            statusLabel.setText("Please enter a subject");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
+            StatusManager.setStatus("Please enter a subject", StatusManager.Type.WARNING);
             ToastNotification.show("Subject is required", ToastNotification.Type.WARNING);
             return;
         }
 
         if (body.isEmpty()) {
-            statusLabel.setText("Please enter a message");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
+            StatusManager.setStatus("Please enter a message", StatusManager.Type.WARNING);
             ToastNotification.show("Message body is required", ToastNotification.Type.WARNING);
             return;
         }
@@ -127,31 +136,25 @@ public class ComposeViewController {
             recipients[i] = recipients[i].trim();
             var recipient = recipients[i];
             if (!EmailValidator.isValidEmail(recipient)) {
-                statusLabel.setText("Invalid email format: " + recipient);
-                statusLabel.setStyle("-fx-text-fill: #F44336;");
+                StatusManager.setStatus("Invalid email: " + recipient, StatusManager.Type.WARNING);
                 ToastNotification.show("Invalid email: " + recipient,
                         ToastNotification.Type.WARNING);
                 return;
             }
         }
 
-        // Send message
-        statusLabel.setText("Sending message...");
-        statusLabel.setStyle("-fx-text-fill: #2196F3;");
+        StatusManager.setStatus("Sending message...", StatusManager.Type.INFO);
 
         messageStore.sendMessage(List.of(recipients), subject, body, new MessageStore.SendCallback() {
             @Override
             public void onSuccess() {
                 Platform.runLater(() -> {
-                    statusLabel.setText("Message sent successfully!");
-                    statusLabel.setStyle("-fx-text-fill: #4CAF50;");
+                    StatusManager.setStatus("Message sent successfully", StatusManager.Type.SUCCESS);
                     ToastNotification.show("Message sent to " + recipients.length +
                             " recipient(s)", ToastNotification.Type.SUCCESS);
 
-                    // Clear form after successful send
                     clearForm();
 
-                    // Optional: Go back to messages view after a delay
                     new Thread(() -> {
                         try {
                             Thread.sleep(500);
@@ -166,8 +169,7 @@ public class ComposeViewController {
             @Override
             public void onFailure() {
                 Platform.runLater(() -> {
-                    statusLabel.setText("Failed to send message");
-                    statusLabel.setStyle("-fx-text-fill: #F44336;");
+                    StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
                 });
             }
         });
@@ -176,8 +178,7 @@ public class ComposeViewController {
     @FXML
     private void onClearClick() {
         clearForm();
-        statusLabel.setText("Form cleared");
-        statusLabel.setStyle("-fx-text-fill: #666666;");
+        StatusManager.setStatus("Form cleared", StatusManager.Type.INFO);
     }
 
     private void clearForm() {

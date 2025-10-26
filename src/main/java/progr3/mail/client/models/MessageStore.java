@@ -120,17 +120,22 @@ public class MessageStore {
         new Thread(() -> {
             Message[] messages = messageApi.getMessagesWithFilter(latestTimestamp, new Date());
             Platform.runLater(() -> {
-                if (messages != null && messages.length > 0) {
-                    for (Message message : messages) {
-                        message = setIsNew(message, true);
-                        messageList.add(0, message);
-                    }
-                    // filterMessages("");
-                    callback.onSuccess(messages.length);
-                } else {
+                if (messages == null) {
                     healthStore.checkHealth();
                     callback.onFailure();
+                    return;
                 }
+
+                if (messages.length == 0) {
+                    callback.onSuccess(0);
+                    return;
+                }
+
+                for (Message message : messages) {
+                    message = setIsNew(message, true);
+                    messageList.add(0, message);
+                }
+                callback.onSuccess(messages.length);
             });
         }).start();
     }

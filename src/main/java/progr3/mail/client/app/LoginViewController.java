@@ -9,10 +9,12 @@ import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.UserApi;
+import progr3.mail.client.model.User;
 import progr3.mail.client.models.AuthStore;
 import progr3.mail.client.models.EmailValidator;
 import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.NavigationManager;
+import progr3.mail.client.models.StatusManager;
 import progr3.mail.client.util.ToastNotification;
 
 public class LoginViewController {
@@ -46,21 +48,35 @@ public class LoginViewController {
     public void initialize() {
         statusLabel.setText("");
         setupHealthListener();
+        setupStatusListener();
+    }
+
+    private void setupStatusListener() {
+        StatusManager.getStatusLabelText().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> statusLabel.setText(newValue));
+        });
+
+        StatusManager.getStatusLabelStyle().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> statusLabel.setStyle(newValue));
+        });
+
+        StatusManager.getConnectionLabelText().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> connectionLabel.setText(newValue));
+        });
+
+        StatusManager.getConnectionLabelStyle().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> connectionIndicator.setStyle(newValue));
+        });
     }
 
     private void setupHealthListener() {
-        healthStore.isServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
+        healthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
-                if (newValue) {
-                    connectionIndicator.setFill(javafx.scene.paint.Color.LIMEGREEN);
-                    // connectionIndicator.setStroke(javafx.scene.paint.Color.DARKGREEN);
-                    connectionLabel.setText("Server is reachable");
-                } else {
-                    System.out.println("server is unreachable");
-                    connectionIndicator.setFill(javafx.scene.paint.Color.RED);
-                    // connectionIndicator.setStroke(javafx.scene.paint.Color.DARKRED);
-                    connectionLabel.setText("Server is unreachable");
-                }
+                if (newValue)
+                    StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);
+                else
+                    StatusManager.setConnectionStatus("Server is unreachable", StatusManager.Type.ERROR);
+
             });
         });
     }
@@ -70,23 +86,20 @@ public class LoginViewController {
         String email = emailField.getText().trim();
 
         if (email.isEmpty()) {
-            statusLabel.setText("Please enter your email address");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
+            StatusManager.setStatus("Please enter your email address", StatusManager.Type.ERROR);
             return;
         }
 
         if (!EmailValidator.isValidEmail(email)) {
-            statusLabel.setText("Please enter a valid email address");
-            statusLabel.setStyle("-fx-text-fill: #F44336;");
+            StatusManager.setStatus("Please enter a valid email address", StatusManager.Type.ERROR);
             return;
         }
 
-        statusLabel.setText("Logging in...");
-        statusLabel.setStyle("-fx-text-fill: #2196F3;");
+        StatusManager.setStatus("Logging in...", StatusManager.Type.INFO);
 
         authStore.login(email, new AuthStore.AuthCallback() {
             @Override
-            public void onSuccess(progr3.mail.client.model.User user) {
+            public void onSuccess(User user) {
                 Platform.runLater(() -> {
                     ToastNotification.show("Login successful! Welcome " +
                             (user.getName() != null ? user.getName() : user.getEmail()),
@@ -99,8 +112,7 @@ public class LoginViewController {
             @Override
             public void onFailure() {
                 Platform.runLater(() -> {
-                    statusLabel.setText("Login failed. Please try again.");
-                    statusLabel.setStyle("-fx-text-fill: #F44336;");
+                    StatusManager.setStatus("Login failed. Please try again.", StatusManager.Type.ERROR);
                 });
             }
         });
