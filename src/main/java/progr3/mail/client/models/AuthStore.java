@@ -35,7 +35,7 @@ public class AuthStore {
         if (AuthStore.isAuthenticated())
             AuthStore.clearAuth();
 
-        healthStore.getIsServerHealthyProperty().set(false);
+        HealthStore.getIsServerHealthyProperty().set(false);
         healthStore.checkHealth();
 
         return !AuthStore.isAuthenticated();

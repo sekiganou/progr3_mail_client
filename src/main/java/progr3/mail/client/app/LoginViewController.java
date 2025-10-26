@@ -32,14 +32,13 @@ public class LoginViewController {
     private Label connectionLabel;
 
     private AuthStore authStore;
-    private HealthStore healthStore;
     private NavigationManager navigationManager;
 
     public LoginViewController() {
         var apiHandler = new ApiHandler();
         var userApi = new UserApi(apiHandler);
         var healthApi = new HealthApi(apiHandler);
-        this.healthStore = new HealthStore(healthApi);
+        var healthStore = new HealthStore(healthApi);
         this.authStore = new AuthStore(userApi, healthStore);
         this.navigationManager = new NavigationManager();
     }
@@ -70,7 +69,7 @@ public class LoginViewController {
     }
 
     private void setupHealthListener() {
-        healthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
+        HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
                 if (newValue)
                     StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);

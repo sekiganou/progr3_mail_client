@@ -17,7 +17,7 @@ public class HealthStore {
         void onFailure();
     }
 
-    public SimpleBooleanProperty getIsServerHealthyProperty() {
+    public static SimpleBooleanProperty getIsServerHealthyProperty() {
         return isServerHealthy;
     }
 

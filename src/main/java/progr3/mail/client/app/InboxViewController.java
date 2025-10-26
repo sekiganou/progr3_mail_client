@@ -287,7 +287,7 @@ public class InboxViewController {
     }
 
     private void setupHealthListener() {
-        healthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
+        HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
                 if (newValue) {
                     // text is set but there is not label in the UI for it
