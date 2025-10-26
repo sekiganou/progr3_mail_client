@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Platform;
 import progr3.mail.client.model.Request;
 import progr3.mail.client.model.Response;
-import progr3.mail.client.util.ToastNotification;
 import progr3.mail.client.model.Request.Command;
+import progr3.mail.client.models.NotificationManager;
 
 public class ApiHandler {
     private ObjectMapper mapper = new ObjectMapper();
@@ -49,7 +49,7 @@ public class ApiHandler {
                 String errorMsg = response.getMessage() != null ? response.getMessage()
                         : "Request failed with status " + response.getStatus();
 
-                Platform.runLater(() -> ToastNotification.show(errorMsg, ToastNotification.Type.ERROR));
+                Platform.runLater(() -> NotificationManager.show(errorMsg, NotificationManager.Type.ERROR));
                 return null;
             }
 
@@ -59,8 +59,8 @@ public class ApiHandler {
                     .println("Error during API request " + command + ": " + e.getMessage() + " ("
                             + e.getClass().getSimpleName() + ")");
 
-            Platform.runLater(() -> ToastNotification.show("Connection error: " + e.getMessage(),
-                    ToastNotification.Type.ERROR));
+            Platform.runLater(() -> NotificationManager.show("Connection error: " + e.getMessage(),
+                    NotificationManager.Type.ERROR));
 
             e.printStackTrace();
             return null;

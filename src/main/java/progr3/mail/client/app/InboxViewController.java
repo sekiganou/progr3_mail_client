@@ -19,8 +19,9 @@ import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
+import progr3.mail.client.models.NotificationManager;
 import progr3.mail.client.models.UserCache;
-import progr3.mail.client.util.ToastNotification;
+
 import java.util.ArrayList;
 
 public class InboxViewController {
@@ -242,7 +243,7 @@ public class InboxViewController {
             @Override
             public void onFailure() {
                 StatusManager.setStatus("Failed to load messages", StatusManager.Type.ERROR);
-                ToastNotification.show("Failed to load messages", ToastNotification.Type.ERROR);
+                NotificationManager.show("Failed to load messages", NotificationManager.Type.ERROR);
             }
         });
     }
@@ -257,13 +258,14 @@ public class InboxViewController {
                 }
 
                 StatusManager.setStatus("Loaded " + messageCount + " new message(s)", StatusManager.Type.SUCCESS);
-                ToastNotification.show("Loaded " + messageCount + " new message(s)", ToastNotification.Type.SUCCESS);
+                NotificationManager.show("Loaded " + messageCount + " new message(s)",
+                        NotificationManager.Type.SUCCESS);
             }
 
             @Override
             public void onFailure() {
                 StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
-                ToastNotification.show("Failed to load new messages", ToastNotification.Type.ERROR);
+                NotificationManager.show("Failed to load new messages", NotificationManager.Type.ERROR);
             }
         });
     }
@@ -316,7 +318,7 @@ public class InboxViewController {
 
     @FXML
     private void onRefreshClick() {
-        ToastNotification.show("Refreshing messages...", ToastNotification.Type.INFO);
+        NotificationManager.show("Refreshing messages...", NotificationManager.Type.INFO);
 
         loadNewMessages();
     }
@@ -326,14 +328,14 @@ public class InboxViewController {
         var success = authStore.logout();
 
         if (!success) {
-            ToastNotification.show("Logout failed. Please try again.",
-                    ToastNotification.Type.ERROR);
+            NotificationManager.show("Logout failed. Please try again.",
+                    NotificationManager.Type.ERROR);
             return;
         }
 
         if (success) {
-            ToastNotification.show("Logged out successfully",
-                    ToastNotification.Type.INFO);
+            NotificationManager.show("Logged out successfully",
+                    NotificationManager.Type.INFO);
             navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(),
                     navigationManager.getLoginView());
         }
@@ -353,16 +355,17 @@ public class InboxViewController {
         if (controller != null) {
             controller.prefillForm(header, to, subject, body);
         } else {
-            ToastNotification.show("Error opening compose view", ToastNotification.Type.ERROR);
+            NotificationManager.show("Error opening compose view", NotificationManager.Type.ERROR);
         }
     }
 
     @FXML
     private void onReplyClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
+
         if (selectedMessage == null) {
             StatusManager.setStatus("No message selected to reply", StatusManager.Type.WARNING);
-            ToastNotification.show("No message selected to reply", ToastNotification.Type.WARNING);
+            NotificationManager.show("No message selected to reply", NotificationManager.Type.WARNING);
             return;
         }
 
@@ -388,7 +391,7 @@ public class InboxViewController {
 
         if (selectedMessage == null) {
             StatusManager.setStatus("No message selected to reply all", StatusManager.Type.WARNING);
-            ToastNotification.show("No message selected to reply all", ToastNotification.Type.WARNING);
+            NotificationManager.show("No message selected to reply all", NotificationManager.Type.WARNING);
             return;
         }
 
@@ -422,7 +425,7 @@ public class InboxViewController {
 
         if (selectedMessage == null) {
             StatusManager.setStatus("No message selected to forward", StatusManager.Type.WARNING);
-            ToastNotification.show("No message selected to forward", ToastNotification.Type.WARNING);
+            NotificationManager.show("No message selected to forward", NotificationManager.Type.WARNING);
             return;
         }
 
@@ -443,7 +446,7 @@ public class InboxViewController {
 
         if (selectedMessage == null) {
             StatusManager.setStatus("No message selected to delete", StatusManager.Type.WARNING);
-            ToastNotification.show("No message selected to delete", ToastNotification.Type.WARNING);
+            NotificationManager.show("No message selected to delete", NotificationManager.Type.WARNING);
             return;
         }
 
@@ -458,13 +461,13 @@ public class InboxViewController {
                 detailSubjectLabel.setText("");
 
                 StatusManager.setStatus("Message deleted successfully", StatusManager.Type.SUCCESS);
-                ToastNotification.show("Message deleted successfully", ToastNotification.Type.SUCCESS);
+                NotificationManager.show("Message deleted successfully", NotificationManager.Type.SUCCESS);
             }
 
             @Override
             public void onFailure() {
                 StatusManager.setStatus("Failed to delete message", StatusManager.Type.ERROR);
-                ToastNotification.show("Failed to delete message", ToastNotification.Type.ERROR);
+                NotificationManager.show("Failed to delete message", NotificationManager.Type.ERROR);
             }
         });
     }

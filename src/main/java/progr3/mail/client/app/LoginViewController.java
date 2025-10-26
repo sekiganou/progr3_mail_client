@@ -15,7 +15,7 @@ import progr3.mail.client.models.EmailValidator;
 import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
-import progr3.mail.client.util.ToastNotification;
+import progr3.mail.client.models.NotificationManager;
 
 public class LoginViewController {
 
@@ -101,9 +101,9 @@ public class LoginViewController {
             @Override
             public void onSuccess(User user) {
                 Platform.runLater(() -> {
-                    ToastNotification.show("Login successful! Welcome " +
+                    NotificationManager.show("Login successful! Welcome " +
                             (user.getName() != null ? user.getName() : user.getEmail()),
-                            ToastNotification.Type.SUCCESS);
+                            NotificationManager.Type.SUCCESS);
                     navigationManager.navigateTo((Stage) emailField.getScene().getWindow(),
                             navigationManager.getInboxView());
                 });

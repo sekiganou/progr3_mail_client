@@ -15,7 +15,7 @@ import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
-import progr3.mail.client.util.ToastNotification;
+import progr3.mail.client.models.NotificationManager;
 
 import java.util.List;
 
@@ -86,7 +86,7 @@ public class ComposeViewController {
         if (body != null && !body.isEmpty()) {
             bodyArea.setText(body);
         }
-        // Set the from field with current user
+
         if (AuthStore.getUser() != null) {
             fromLabel.setText(AuthStore.getUser().getEmail());
         }
@@ -114,19 +114,19 @@ public class ComposeViewController {
 
         if (to.isEmpty()) {
             StatusManager.setStatus("Please enter recipient email(s)", StatusManager.Type.WARNING);
-            ToastNotification.show("Recipient email is required", ToastNotification.Type.WARNING);
+            NotificationManager.show("Recipient email is required", NotificationManager.Type.WARNING);
             return;
         }
 
         if (subject.isEmpty()) {
             StatusManager.setStatus("Please enter a subject", StatusManager.Type.WARNING);
-            ToastNotification.show("Subject is required", ToastNotification.Type.WARNING);
+            NotificationManager.show("Subject is required", NotificationManager.Type.WARNING);
             return;
         }
 
         if (body.isEmpty()) {
             StatusManager.setStatus("Please enter a message", StatusManager.Type.WARNING);
-            ToastNotification.show("Message body is required", ToastNotification.Type.WARNING);
+            NotificationManager.show("Message body is required", NotificationManager.Type.WARNING);
             return;
         }
 
@@ -137,8 +137,8 @@ public class ComposeViewController {
             var recipient = recipients[i];
             if (!EmailValidator.isValidEmail(recipient)) {
                 StatusManager.setStatus("Invalid email: " + recipient, StatusManager.Type.WARNING);
-                ToastNotification.show("Invalid email: " + recipient,
-                        ToastNotification.Type.WARNING);
+                NotificationManager.show("Invalid email: " + recipient,
+                        NotificationManager.Type.WARNING);
                 return;
             }
         }
@@ -150,8 +150,8 @@ public class ComposeViewController {
             public void onSuccess() {
                 Platform.runLater(() -> {
                     StatusManager.setStatus("Message sent successfully", StatusManager.Type.SUCCESS);
-                    ToastNotification.show("Message sent to " + recipients.length +
-                            " recipient(s)", ToastNotification.Type.SUCCESS);
+                    NotificationManager.show("Message sent to " + recipients.length +
+                            " recipient(s)", NotificationManager.Type.SUCCESS);
 
                     clearForm();
 

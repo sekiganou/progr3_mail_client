@@ -1,4 +1,4 @@
-package progr3.mail.client.util;
+package progr3.mail.client.models;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -12,7 +12,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
-public class ToastNotification {
+public class NotificationManager {
 
     public enum Type {
         SUCCESS, ERROR, INFO, WARNING

@@ -8,6 +8,7 @@ public class StatusManager {
     static final String STYLE_ERROR = "-fx-fill: #F44336; -fx-text-fill: #F44336;";
     static final String STYLE_INFO = "-fx-fill: #2196F3; -fx-text-fill: #2196F3;";
     static final String STYLE_WARNING = "-fx-fill: #FF9800; -fx-text-fill: #FF9800;";
+    static final String STYLE_DEFAULT = "-fx-fill: #000000; -fx-text-fill: #000000;";
 
     public enum Type {
         SUCCESS,
@@ -32,6 +33,8 @@ public class StatusManager {
 
     public static void setStatus(String text, Type status) {
         statusLabelText.set(text);
+
+        statusLabelStyle.set(STYLE_DEFAULT);
 
         String style;
         switch (status) {
@@ -63,6 +66,8 @@ public class StatusManager {
 
     public static void setConnectionStatus(String text, Type status) {
         connectionLabelText.set(text);
+
+        connectionLabelStyle.set(STYLE_DEFAULT);
 
         String style;
         switch (status) {

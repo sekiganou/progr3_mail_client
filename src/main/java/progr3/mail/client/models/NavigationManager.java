@@ -3,7 +3,6 @@ package progr3.mail.client.models;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import progr3.mail.client.util.ToastNotification;
 
 import java.io.IOException;
 
@@ -74,8 +73,8 @@ public class NavigationManager {
             return fxmlLoader.getController();
         } catch (IOException e) {
             e.printStackTrace();
-            ToastNotification.show("Error loading '" + toView.getTitle() + "' view",
-                    ToastNotification.Type.ERROR);
+            NotificationManager.show("Error loading '" + toView.getTitle() + "' view",
+                    NotificationManager.Type.ERROR);
             return null;
         }
     }

@@ -134,6 +134,7 @@ public class MessageStore {
                 for (Message message : messages) {
                     message = setIsNew(message, true);
                     messageList.add(0, message);
+                    filteredMessageList.add(0, message);
                 }
                 callback.onSuccess(messages.length);
             });
@@ -163,12 +164,13 @@ public class MessageStore {
         new Thread(() -> {
             String messageId = messageApi.sendMessage(recipientUserEmails, subject, body);
             Platform.runLater(() -> {
-                if (messageId != null) {
-                    callback.onSuccess();
-                } else {
+                if (messageId == null || messageId.isEmpty()) {
                     healthStore.checkHealth();
                     callback.onFailure();
+                    return;
                 }
+
+                callback.onSuccess();
             });
         }).start();
     }
