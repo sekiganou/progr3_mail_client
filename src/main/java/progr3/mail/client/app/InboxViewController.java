@@ -105,6 +105,7 @@ public class InboxViewController {
         setupStatusListener();
 
         loadMessages();
+
         loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
     }
 
@@ -131,7 +132,7 @@ public class InboxViewController {
     private void setupTableColumns() {
         // Status column (read/unread indicator)
         statusColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(messageStore.isNew(cellData.getValue()) ? "●" : ""));
+                cellData -> new SimpleStringProperty(MessageStore.isNew(cellData.getValue()) ? "●" : ""));
 
         statusColumn.setCellFactory(column -> new TableCell<Message, String>() {
             @Override
@@ -174,7 +175,7 @@ public class InboxViewController {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setStyle("");
-                } else if (messageStore.isNew(item)) {
+                } else if (MessageStore.isNew(item)) {
                     setStyle("-fx-font-weight: bold; -fx-background-color: #E3F2FD;");
                 } else {
                     setStyle("");
@@ -186,7 +187,7 @@ public class InboxViewController {
     private void setupSearchFilter() {
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
             messageStore.filterMessages(newValue);
-            messagesTableView.setItems(messageStore.getFilteredMessageList());
+            messagesTableView.setItems(MessageStore.getFilteredMessageList());
             updateMessageCountLabel();
         });
     }
@@ -225,7 +226,7 @@ public class InboxViewController {
                 e.printStackTrace();
             }
             Platform.runLater(() -> {
-                loadNewMessages();
+                loadNewMessages(false);
                 loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
             });
         }).start();
@@ -237,7 +238,7 @@ public class InboxViewController {
             @Override
             public void onSuccess(int messageCount) {
                 StatusManager.setStatus("Loaded " + messageCount + " message(s)", StatusManager.Type.SUCCESS);
-                messagesTableView.setItems(messageStore.getFilteredMessageList());
+                messagesTableView.setItems(MessageStore.getFilteredMessageList());
             }
 
             @Override
@@ -248,18 +249,22 @@ public class InboxViewController {
         });
     }
 
-    private void loadNewMessages() {
+    private void loadNewMessages(boolean showNotificationWhenNone) {
         messageStore.loadNewMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
                 if (messageCount == 0) {
                     StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
+                    if (showNotificationWhenNone) {
+                        NotificationManager.show("No new messages", NotificationManager.Type.INFO);
+                    }
                     return;
                 }
 
                 StatusManager.setStatus("Loaded " + messageCount + " new message(s)", StatusManager.Type.SUCCESS);
                 NotificationManager.show("Loaded " + messageCount + " new message(s)",
                         NotificationManager.Type.SUCCESS);
+
             }
 
             @Override
@@ -271,13 +276,13 @@ public class InboxViewController {
     }
 
     private void updateMessageCountLabel() {
-        messageCountLabel.setText("Total messages: " + messageStore.getFilteredMessageCount() +
-                (messageStore
-                        .getFilteredMessageCount() != messageStore.getMessageCount()
-                                ? " (filtered from " + messageStore.getMessageCount() + ")"
+        messageCountLabel.setText("Total messages: " + MessageStore.getFilteredMessageCount() +
+                (MessageStore
+                        .getFilteredMessageCount() != MessageStore.getMessageCount()
+                                ? " (filtered from " + MessageStore.getMessageCount() + ")"
                                 : "")
                 +
-                " | Unread: " + messageStore.getNewMessageCount());
+                " | Unread: " + MessageStore.getNewMessageCount());
 
     }
 
@@ -295,7 +300,7 @@ public class InboxViewController {
     }
 
     private void setupMessageListListener() {
-        messageStore.getMessageList().addListener((ListChangeListener<Message>) change -> {
+        MessageStore.getMessageList().addListener((ListChangeListener<Message>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
@@ -318,9 +323,7 @@ public class InboxViewController {
 
     @FXML
     private void onRefreshClick() {
-        NotificationManager.show("Refreshing messages...", NotificationManager.Type.INFO);
-
-        loadNewMessages();
+        loadNewMessages(true);
     }
 
     @FXML

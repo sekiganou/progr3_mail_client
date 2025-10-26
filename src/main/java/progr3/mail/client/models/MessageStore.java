@@ -12,8 +12,8 @@ import progr3.mail.client.model.Message;
 
 public class MessageStore {
     private HealthStore healthStore;
-    private ObservableList<Message> messageList = FXCollections.observableArrayList();
-    private ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
+    private static ObservableList<Message> messageList = FXCollections.observableArrayList();
+    private static ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
 
@@ -40,23 +40,23 @@ public class MessageStore {
         void onFailure();
     }
 
-    public ObservableList<Message> getMessageList() {
+    public static ObservableList<Message> getMessageList() {
         return messageList;
     }
 
-    public ObservableList<Message> getFilteredMessageList() {
+    public static ObservableList<Message> getFilteredMessageList() {
         return filteredMessageList;
     }
 
-    public int getMessageCount() {
+    public static int getMessageCount() {
         return messageList.size();
     }
 
-    public int getFilteredMessageCount() {
+    public static int getFilteredMessageCount() {
         return filteredMessageList.size();
     }
 
-    public int getNewMessageCount() {
+    public static int getNewMessageCount() {
         return messageList.stream().mapToInt(msg -> isNew(msg) ? 1 : 0).sum();
     }
 
@@ -64,7 +64,7 @@ public class MessageStore {
         return setIsNew(msg, false);
     }
 
-    public boolean isNew(Message msg) {
+    public static boolean isNew(Message msg) {
         if (msg.getAdditionalProperties().containsKey(IS_NEW)) {
             Object isNewObj = msg.getAdditionalProperties().get(IS_NEW);
             if (isNewObj instanceof Boolean) {
@@ -88,17 +88,18 @@ public class MessageStore {
             Message[] messages = messageApi.getMessages();
 
             Platform.runLater(() -> {
-                if (messages != null) {
-                    messageList.clear();
-                    for (Message message : messages) {
-                        message = setIsNew(message, false);
-                    }
-                    messageList.addAll(messages);
-                    callback.onSuccess(messages.length);
-                } else {
+                if (messages == null) {
                     healthStore.checkHealth();
                     callback.onFailure();
+                    return;
                 }
+
+                messageList.clear();
+                for (Message message : messages) {
+                    message = setIsNew(message, false);
+                }
+                messageList.addAll(messages);
+                callback.onSuccess(messages.length);
             });
         }).start();
     }
