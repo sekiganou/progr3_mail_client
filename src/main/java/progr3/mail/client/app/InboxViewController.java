@@ -76,7 +76,6 @@ public class InboxViewController {
     private AuthStore authStore;
     private HealthStore healthStore;
     private NavigationManager navigationManager;
-    private static final int POLLING_INTERVAL_SECONDS = 30;
 
     public InboxViewController() {
         this.navigationManager = new NavigationManager();
@@ -105,8 +104,6 @@ public class InboxViewController {
         setupStatusListener();
 
         loadMessages();
-
-        loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
     }
 
     private void setupStatusListener() {
@@ -218,21 +215,6 @@ public class InboxViewController {
         detailBodyArea.setText(message.getBody());
     }
 
-    private void loadNewMessagesRecursively(double delayInSeconds) {
-        new Thread(() -> {
-            try {
-                Thread.sleep((long) (delayInSeconds * 1000));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            Platform.runLater(() -> {
-                loadNewMessages(false);
-                loadNewMessagesRecursively(POLLING_INTERVAL_SECONDS);
-            });
-        }).start();
-
-    }
-
     private void loadMessages() {
         messageStore.loadMessages(new MessageStore.LoadCallback() {
             @Override
@@ -249,15 +231,13 @@ public class InboxViewController {
         });
     }
 
-    private void loadNewMessages(boolean showNotificationWhenNone) {
+    private void loadNewMessages() {
         messageStore.loadNewMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
                 if (messageCount == 0) {
                     StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
-                    if (showNotificationWhenNone) {
-                        NotificationManager.show("No new messages", NotificationManager.Type.INFO);
-                    }
+                    NotificationManager.show("No new messages", NotificationManager.Type.INFO);
                     return;
                 }
 
@@ -323,7 +303,7 @@ public class InboxViewController {
 
     @FXML
     private void onRefreshClick() {
-        loadNewMessages(true);
+        loadNewMessages();
     }
 
     @FXML

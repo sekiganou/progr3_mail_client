@@ -8,14 +8,22 @@ import java.io.IOException;
 
 public class MailClientApplication extends Application {
 
+    private Client client = new Client();
+
     @Override
     public void start(Stage stage) throws IOException {
         NavigationManager navigationManager = new NavigationManager();
         navigationManager.navigateTo(stage, navigationManager.getLoginView());
         stage.show();
 
-        var client = new Client();
         client.start();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+
+        client.stop();
     }
 
 }
