@@ -83,6 +83,8 @@ public class MessageStore {
         if (!AuthStore.isAuthenticated())
             return;
 
+        StatusManager.setStatus("Loading messages...", StatusManager.Type.INFO);
+
         new Thread(() -> {
 
             Message[] messages = messageApi.getMessages();
@@ -90,6 +92,10 @@ public class MessageStore {
             Platform.runLater(() -> {
                 if (messages == null) {
                     healthStore.checkHealth();
+
+                    StatusManager.setStatus("Failed to load messages", StatusManager.Type.ERROR);
+                    NotificationManager.show("Failed to load messages", NotificationManager.Type.ERROR);
+
                     callback.onFailure();
                     return;
                 }
@@ -99,7 +105,10 @@ public class MessageStore {
                     message = setIsNew(message, false);
                 }
                 messageList.addAll(messages);
-                callback.onSuccess(messages.length);
+
+                int messageCount = messages.length;
+                StatusManager.setStatus("Loaded " + messageCount + " message(s)", StatusManager.Type.SUCCESS);
+                callback.onSuccess(messageCount);
             });
         }).start();
     }
@@ -118,16 +127,24 @@ public class MessageStore {
                 })
                 .orElse(new Date(0));
 
+        StatusManager.setStatus("Checking for new messages...", StatusManager.Type.INFO);
+
         new Thread(() -> {
             Message[] messages = messageApi.getMessagesWithFilter(latestTimestamp, new Date());
+
             Platform.runLater(() -> {
                 if (messages == null) {
                     healthStore.checkHealth();
+
+                    StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
+                    NotificationManager.show("Failed to load new messages", NotificationManager.Type.ERROR);
+
                     callback.onFailure();
                     return;
                 }
 
                 if (messages.length == 0) {
+                    StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
                     callback.onSuccess(0);
                     return;
                 }
@@ -137,7 +154,12 @@ public class MessageStore {
                     messageList.add(0, message);
                     filteredMessageList.add(0, message);
                 }
-                callback.onSuccess(messages.length);
+
+                int messageCount = messages.length;
+                StatusManager.setStatus("Loaded " + messageCount + " new message(s)", StatusManager.Type.SUCCESS);
+                NotificationManager.show("Loaded " + messageCount + " new message(s)",
+                        NotificationManager.Type.SUCCESS);
+                callback.onSuccess(messageCount);
             });
         }).start();
     }
@@ -162,15 +184,56 @@ public class MessageStore {
         if (!AuthStore.isAuthenticated())
             return;
 
+        if (recipientUserEmails.isEmpty()) {
+            StatusManager.setStatus("Please enter recipient email(s)", StatusManager.Type.WARNING);
+            NotificationManager.show("Recipient email is required", NotificationManager.Type.WARNING);
+            return;
+        }
+
+        if (subject.isEmpty()) {
+            StatusManager.setStatus("Please enter a subject", StatusManager.Type.WARNING);
+            NotificationManager.show("Subject is required", NotificationManager.Type.WARNING);
+            return;
+        }
+
+        if (body.isEmpty()) {
+            StatusManager.setStatus("Please enter a message", StatusManager.Type.WARNING);
+            NotificationManager.show("Message body is required", NotificationManager.Type.WARNING);
+            return;
+        }
+
+        for (int i = 0; i < recipientUserEmails.size(); i++) {
+            recipientUserEmails.set(i, recipientUserEmails.get(i).trim());
+
+            var recipient = recipientUserEmails.get(i);
+            if (!EmailValidator.isValidEmail(recipient)) {
+                StatusManager.setStatus("Invalid email: " + recipient, StatusManager.Type.WARNING);
+                NotificationManager.show("Invalid email: " + recipient,
+                        NotificationManager.Type.WARNING);
+                return;
+            }
+        }
+
+        StatusManager.setStatus("Sending message...", StatusManager.Type.INFO);
+
         new Thread(() -> {
             String messageId = messageApi.sendMessage(recipientUserEmails, subject, body);
+
             Platform.runLater(() -> {
                 if (messageId == null || messageId.isEmpty()) {
                     healthStore.checkHealth();
+
+                    Platform.runLater(() -> {
+                        StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
+                    });
+
                     callback.onFailure();
                     return;
                 }
 
+                StatusManager.setStatus("Message sent successfully", StatusManager.Type.SUCCESS);
+                NotificationManager.show("Message sent to " + recipientUserEmails.size() +
+                        " recipient(s)", NotificationManager.Type.SUCCESS);
                 callback.onSuccess();
             });
         }).start();
@@ -180,12 +243,25 @@ public class MessageStore {
         if (!AuthStore.isAuthenticated())
             return;
 
+        if (message == null) {
+            StatusManager.setStatus("No message selected to delete", StatusManager.Type.WARNING);
+            NotificationManager.show("No message selected to delete", NotificationManager.Type.WARNING);
+            return;
+        }
+
+        StatusManager.setStatus("Deleting message...", StatusManager.Type.INFO);
+
         new Thread(() -> {
             boolean success = (messageApi.deleteMessage(message.getGuid()) != null);
+
             Platform.runLater(() -> {
 
                 if (!success) {
                     healthStore.checkHealth();
+
+                    StatusManager.setStatus("Failed to delete message", StatusManager.Type.ERROR);
+                    NotificationManager.show("Failed to delete message", NotificationManager.Type.ERROR);
+
                     callback.onFailure();
                     return;
                 }
@@ -194,11 +270,14 @@ public class MessageStore {
                 var removedFromFilteredMessageList = filteredMessageList.remove(message);
 
                 if (!removedFromMessageList && !removedFromFilteredMessageList) {
-                    healthStore.checkHealth();
+                    StatusManager.setStatus("Message deleted but you may need to refresh the view",
+                            StatusManager.Type.WARNING);
                     callback.onFailure();
                     return;
                 }
 
+                StatusManager.setStatus("Message deleted successfully", StatusManager.Type.SUCCESS);
+                NotificationManager.show("Message deleted successfully", NotificationManager.Type.SUCCESS);
                 callback.onSuccess();
             });
         }).start();

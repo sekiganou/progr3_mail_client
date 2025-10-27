@@ -10,8 +10,6 @@ import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
-import progr3.mail.client.models.NotificationManager;
-import progr3.mail.client.models.StatusManager;
 
 public class Client {
 
@@ -39,22 +37,10 @@ public class Client {
                 messageStore.loadNewMessages(new MessageStore.LoadCallback() {
                     @Override
                     public void onSuccess(int messageCount) {
-                        if (messageCount == 0) {
-                            StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
-                            return;
-                        }
-
-                        StatusManager.setStatus("Loaded " + messageCount + " new message(s)",
-                                StatusManager.Type.SUCCESS);
-                        NotificationManager.show("Loaded " + messageCount + " new message(s)",
-                                NotificationManager.Type.SUCCESS);
-
                     }
 
                     @Override
                     public void onFailure() {
-                        StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
-                        NotificationManager.show("Failed to load new messages", NotificationManager.Type.ERROR);
                     }
                 });
             });

@@ -219,38 +219,27 @@ public class InboxViewController {
         messageStore.loadMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
-                StatusManager.setStatus("Loaded " + messageCount + " message(s)", StatusManager.Type.SUCCESS);
                 messagesTableView.setItems(MessageStore.getFilteredMessageList());
             }
 
             @Override
             public void onFailure() {
-                StatusManager.setStatus("Failed to load messages", StatusManager.Type.ERROR);
-                NotificationManager.show("Failed to load messages", NotificationManager.Type.ERROR);
             }
         });
     }
 
-    private void loadNewMessages() {
+    private void refreshMessages() {
         messageStore.loadNewMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
                 if (messageCount == 0) {
-                    StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
                     NotificationManager.show("No new messages", NotificationManager.Type.INFO);
                     return;
                 }
-
-                StatusManager.setStatus("Loaded " + messageCount + " new message(s)", StatusManager.Type.SUCCESS);
-                NotificationManager.show("Loaded " + messageCount + " new message(s)",
-                        NotificationManager.Type.SUCCESS);
-
             }
 
             @Override
             public void onFailure() {
-                StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
-                NotificationManager.show("Failed to load new messages", NotificationManager.Type.ERROR);
             }
         });
     }
@@ -303,7 +292,7 @@ public class InboxViewController {
 
     @FXML
     private void onRefreshClick() {
-        loadNewMessages();
+        refreshMessages();
     }
 
     @FXML
@@ -427,30 +416,19 @@ public class InboxViewController {
     private void onDeleteClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
-        if (selectedMessage == null) {
-            StatusManager.setStatus("No message selected to delete", StatusManager.Type.WARNING);
-            NotificationManager.show("No message selected to delete", NotificationManager.Type.WARNING);
-            return;
-        }
-
         messageStore.deleteMessage(selectedMessage, new MessageStore.DeleteCallback() {
             @Override
             public void onSuccess() {
-                updateMessageCountLabel();
                 detailBodyArea.clear();
                 detailDateLabel.setText("");
                 detailRecipientsLabel.setText("");
                 detailSenderLabel.setText("");
                 detailSubjectLabel.setText("");
 
-                StatusManager.setStatus("Message deleted successfully", StatusManager.Type.SUCCESS);
-                NotificationManager.show("Message deleted successfully", NotificationManager.Type.SUCCESS);
             }
 
             @Override
             public void onFailure() {
-                StatusManager.setStatus("Failed to delete message", StatusManager.Type.ERROR);
-                NotificationManager.show("Failed to delete message", NotificationManager.Type.ERROR);
             }
         });
     }

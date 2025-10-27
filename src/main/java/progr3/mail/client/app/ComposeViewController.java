@@ -10,12 +10,10 @@ import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.models.AuthStore;
-import progr3.mail.client.models.EmailValidator;
 import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
-import progr3.mail.client.models.NotificationManager;
 
 import java.util.List;
 
@@ -107,52 +105,17 @@ public class ComposeViewController {
 
     @FXML
     private void onSendClick() {
-        // Validate fields
         String to = toField.getText().trim();
         String subject = subjectField.getText().trim();
         String body = bodyArea.getText().trim();
-
-        if (to.isEmpty()) {
-            StatusManager.setStatus("Please enter recipient email(s)", StatusManager.Type.WARNING);
-            NotificationManager.show("Recipient email is required", NotificationManager.Type.WARNING);
-            return;
-        }
-
-        if (subject.isEmpty()) {
-            StatusManager.setStatus("Please enter a subject", StatusManager.Type.WARNING);
-            NotificationManager.show("Subject is required", NotificationManager.Type.WARNING);
-            return;
-        }
-
-        if (body.isEmpty()) {
-            StatusManager.setStatus("Please enter a message", StatusManager.Type.WARNING);
-            NotificationManager.show("Message body is required", NotificationManager.Type.WARNING);
-            return;
-        }
-
-        // Parse recipients
-        String[] recipients = to.split(",");
-        for (int i = 0; i < recipients.length; i++) {
-            recipients[i] = recipients[i].trim();
-            var recipient = recipients[i];
-            if (!EmailValidator.isValidEmail(recipient)) {
-                StatusManager.setStatus("Invalid email: " + recipient, StatusManager.Type.WARNING);
-                NotificationManager.show("Invalid email: " + recipient,
-                        NotificationManager.Type.WARNING);
-                return;
-            }
-        }
+        String[] recipientEmails = to.split(",");
 
         StatusManager.setStatus("Sending message...", StatusManager.Type.INFO);
 
-        messageStore.sendMessage(List.of(recipients), subject, body, new MessageStore.SendCallback() {
+        messageStore.sendMessage(List.of(recipientEmails), subject, body, new MessageStore.SendCallback() {
             @Override
             public void onSuccess() {
                 Platform.runLater(() -> {
-                    StatusManager.setStatus("Message sent successfully", StatusManager.Type.SUCCESS);
-                    NotificationManager.show("Message sent to " + recipients.length +
-                            " recipient(s)", NotificationManager.Type.SUCCESS);
-
                     clearForm();
 
                     new Thread(() -> {
@@ -168,9 +131,6 @@ public class ComposeViewController {
 
             @Override
             public void onFailure() {
-                Platform.runLater(() -> {
-                    StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
-                });
             }
         });
     }
