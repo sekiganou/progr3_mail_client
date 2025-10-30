@@ -202,22 +202,22 @@ public class MessageStore {
             return;
         }
 
-        for (int i = 0; i < recipientUserEmails.size(); i++) {
-            recipientUserEmails.set(i, recipientUserEmails.get(i).trim());
+        var trimmedRecipientUserEmails = recipientUserEmails.stream()
+                .map(String::trim)
+                .toList();
 
-            var recipient = recipientUserEmails.get(i);
-            if (!EmailValidator.isValidEmail(recipient)) {
-                StatusManager.setStatus("Invalid email: " + recipient, StatusManager.Type.WARNING);
-                NotificationManager.show("Invalid email: " + recipient,
-                        NotificationManager.Type.WARNING);
-                return;
-            }
-        }
+        trimmedRecipientUserEmails.stream()
+                .filter(r -> !EmailValidator.isValidEmail(r))
+                .findFirst()
+                .ifPresent(invalid -> {
+                    StatusManager.setStatus("Invalid email: " + invalid, StatusManager.Type.WARNING);
+                    NotificationManager.show("Invalid email: " + invalid, NotificationManager.Type.WARNING);
+                });
 
         StatusManager.setStatus("Sending message...", StatusManager.Type.INFO);
 
         new Thread(() -> {
-            String messageId = messageApi.sendMessage(recipientUserEmails, subject, body);
+            String messageId = messageApi.sendMessage(trimmedRecipientUserEmails, subject, body);
 
             Platform.runLater(() -> {
                 if (messageId == null || messageId.isEmpty()) {
@@ -232,7 +232,7 @@ public class MessageStore {
                 }
 
                 StatusManager.setStatus("Message sent successfully", StatusManager.Type.SUCCESS);
-                NotificationManager.show("Message sent to " + recipientUserEmails.size() +
+                NotificationManager.show("Message sent to " + trimmedRecipientUserEmails.size() +
                         " recipient(s)", NotificationManager.Type.SUCCESS);
                 callback.onSuccess();
             });
