@@ -81,15 +81,15 @@ public class InboxViewController {
         this.navigationManager = new NavigationManager();
         var apiHandler = new ApiHandler();
 
-        var healthApi = new HealthApi(apiHandler);
-        this.healthStore = new HealthStore(healthApi);
-
         var messageApi = new MessageApi(apiHandler);
-        this.messageStore = new MessageStore(messageApi, healthStore);
+        this.messageStore = new MessageStore(messageApi);
 
         var userApi = new UserApi(apiHandler);
         this.userCache = new UserCache(userApi);
-        this.authStore = new AuthStore(userApi, healthStore);
+        this.authStore = new AuthStore(userApi);
+
+        var healthApi = new HealthApi(apiHandler);
+        this.healthStore = new HealthStore(healthApi);
     }
 
     @FXML
@@ -104,6 +104,8 @@ public class InboxViewController {
         setupStatusListener();
 
         loadMessages();
+
+        healthStore.checkHealth();
     }
 
     private void setupStatusListener() {
@@ -258,7 +260,7 @@ public class InboxViewController {
     private void setupHealthListener() {
         HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
-                if (newValue) {
+                if (newValue.intValue() == HealthStore.HEALTHY) {
                     // text is set but there is not label in the UI for it
                     StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);
                 } else {

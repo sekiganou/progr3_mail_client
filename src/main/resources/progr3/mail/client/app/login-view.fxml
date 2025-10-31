@@ -20,8 +20,8 @@
            style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;" />
 
     <HBox alignment="CENTER" spacing="8.0">
-       <Circle fx:id="connectionIndicator" radius="6" fill="red" stroke="#cccccc" strokeWidth="1" />
-       <Label fx:id="connectionLabel" text="Server is unreachable" 
+       <Circle fx:id="connectionIndicator" radius="6" fill="#2196F3" stroke="#cccccc" strokeWidth="1" />
+       <Label fx:id="connectionLabel" text="Checking health..." 
        style="-fx-font-size: 12px; -fx-text-fill: #999999;" />
     </HBox>
     

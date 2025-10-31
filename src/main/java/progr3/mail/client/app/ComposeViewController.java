@@ -7,10 +7,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
-import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.models.AuthStore;
-import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
@@ -48,9 +46,7 @@ public class ComposeViewController {
 
         var apiHandler = new ApiHandler();
         var messageApi = new MessageApi(apiHandler);
-        var healthApi = new HealthApi(apiHandler);
-        var healthStore = new HealthStore(healthApi);
-        this.messageStore = new MessageStore(messageApi, healthStore);
+        this.messageStore = new MessageStore(messageApi);
     }
 
     @FXML

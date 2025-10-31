@@ -11,15 +11,13 @@ import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.model.Message;
 
 public class MessageStore {
-    private HealthStore healthStore;
     private static ObservableList<Message> messageList = FXCollections.observableArrayList();
     private static ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
 
-    public MessageStore(MessageApi messageApi, HealthStore healthStore) {
+    public MessageStore(MessageApi messageApi) {
         this.messageApi = messageApi;
-        this.healthStore = healthStore;
     }
 
     public interface LoadCallback {
@@ -91,8 +89,6 @@ public class MessageStore {
 
             Platform.runLater(() -> {
                 if (messages == null) {
-                    healthStore.checkHealth();
-
                     StatusManager.setStatus("Failed to load messages", StatusManager.Type.ERROR);
                     NotificationManager.show("Failed to load messages", NotificationManager.Type.ERROR);
 
@@ -134,8 +130,6 @@ public class MessageStore {
 
             Platform.runLater(() -> {
                 if (messages == null) {
-                    healthStore.checkHealth();
-
                     StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
                     NotificationManager.show("Failed to load new messages", NotificationManager.Type.ERROR);
 
@@ -221,8 +215,6 @@ public class MessageStore {
 
             Platform.runLater(() -> {
                 if (messageId == null || messageId.isEmpty()) {
-                    healthStore.checkHealth();
-
                     Platform.runLater(() -> {
                         StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
                     });
@@ -257,8 +249,6 @@ public class MessageStore {
             Platform.runLater(() -> {
 
                 if (!success) {
-                    healthStore.checkHealth();
-
                     StatusManager.setStatus("Failed to delete message", StatusManager.Type.ERROR);
                     NotificationManager.show("Failed to delete message", NotificationManager.Type.ERROR);
 

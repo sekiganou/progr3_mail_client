@@ -59,8 +59,9 @@ public class ApiHandler {
                     .println("Error during API request " + command + ": " + e.getMessage() + " ("
                             + e.getClass().getSimpleName() + ")");
 
-            Platform.runLater(() -> NotificationManager.show("Connection error: " + e.getMessage(),
-                    NotificationManager.Type.ERROR));
+            // Platform.runLater(() -> NotificationManager.show("Connection error: " +
+            // e.getMessage(),
+            // NotificationManager.Type.ERROR));
 
             e.printStackTrace();
             return null;

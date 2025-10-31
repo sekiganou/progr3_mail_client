@@ -13,7 +13,8 @@ import progr3.mail.client.models.MessageStore;
 
 public class Client {
 
-    private static final int POLLING_INTERVAL_SECONDS = 30;
+    private static final int POLLING_MESSAGES_SECONDS = 30;
+    private static final int POLLING_HEALTH_SECONDS = 5;
     private HealthStore healthStore;
     private MessageStore messageStore;
     private ScheduledExecutorService scheduler;
@@ -23,17 +24,19 @@ public class Client {
         var healthApi = new HealthApi(apiHandler);
         var messageApi = new MessageApi(apiHandler);
         this.healthStore = new HealthStore(healthApi);
-        this.messageStore = new MessageStore(messageApi, healthStore);
+        this.messageStore = new MessageStore(messageApi);
         this.scheduler = Executors.newScheduledThreadPool(1);
     }
 
     public void start() {
-        healthStore.checkHealth();
-
         scheduler.scheduleAtFixedRate(() -> {
             Platform.runLater(() -> {
                 healthStore.checkHealth();
+            });
+        }, POLLING_HEALTH_SECONDS, POLLING_HEALTH_SECONDS, TimeUnit.SECONDS);
 
+        scheduler.scheduleAtFixedRate(() -> {
+            Platform.runLater(() -> {
                 messageStore.loadNewMessages(new MessageStore.LoadCallback() {
                     @Override
                     public void onSuccess(int messageCount) {
@@ -44,7 +47,7 @@ public class Client {
                     }
                 });
             });
-        }, POLLING_INTERVAL_SECONDS, POLLING_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        }, POLLING_MESSAGES_SECONDS, POLLING_MESSAGES_SECONDS, TimeUnit.SECONDS);
     }
 
     public void stop() {

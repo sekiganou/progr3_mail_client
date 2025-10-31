@@ -34,13 +34,17 @@ public class LoginViewController {
     private AuthStore authStore;
     private NavigationManager navigationManager;
 
+    private HealthStore healthStore;
+
     public LoginViewController() {
         var apiHandler = new ApiHandler();
+
         var userApi = new UserApi(apiHandler);
-        var healthApi = new HealthApi(apiHandler);
-        var healthStore = new HealthStore(healthApi);
-        this.authStore = new AuthStore(userApi, healthStore);
+        this.authStore = new AuthStore(userApi);
         this.navigationManager = new NavigationManager();
+
+        var healthApi = new HealthApi(apiHandler);
+        this.healthStore = new HealthStore(healthApi);
     }
 
     @FXML
@@ -48,6 +52,8 @@ public class LoginViewController {
         statusLabel.setText("");
         setupHealthListener();
         setupStatusListener();
+
+        healthStore.checkHealth();
     }
 
     private void setupStatusListener() {
@@ -71,7 +77,7 @@ public class LoginViewController {
     private void setupHealthListener() {
         HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
-                if (newValue)
+                if (newValue.intValue() == HealthStore.HEALTHY)
                     StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);
                 else
                     StatusManager.setConnectionStatus("Server is unreachable", StatusManager.Type.ERROR);
