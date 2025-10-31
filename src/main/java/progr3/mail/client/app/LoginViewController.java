@@ -85,12 +85,14 @@ public class LoginViewController {
         String email = emailField.getText().trim();
 
         if (email.isEmpty()) {
-            StatusManager.setStatus("Please enter your email address", StatusManager.Type.ERROR);
+            StatusManager.setStatus("Please enter your email address", StatusManager.Type.WARNING);
+            NotificationManager.show("Email field cannot be empty", NotificationManager.Type.WARNING);
             return;
         }
 
         if (!EmailValidator.isValidEmail(email)) {
-            StatusManager.setStatus("Please enter a valid email address", StatusManager.Type.ERROR);
+            StatusManager.setStatus("Please enter a valid email address", StatusManager.Type.WARNING);
+            NotificationManager.show("Invalid email format", NotificationManager.Type.WARNING);
             return;
         }
 
