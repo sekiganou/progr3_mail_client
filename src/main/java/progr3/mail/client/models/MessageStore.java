@@ -146,7 +146,6 @@ public class MessageStore {
                 for (Message message : messages) {
                     message = setIsNew(message, true);
                     messageList.add(0, message);
-                    filteredMessageList.add(0, message);
                 }
 
                 int messageCount = messages.length;
