@@ -9,7 +9,6 @@ import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.UserApi;
-import progr3.mail.client.model.User;
 import progr3.mail.client.models.AuthStore;
 import progr3.mail.client.models.EmailValidator;
 import progr3.mail.client.models.HealthStore;
@@ -90,12 +89,6 @@ public class LoginViewController {
     private void onLoginClick() {
         String email = emailField.getText().trim();
 
-        if (email.isEmpty()) {
-            StatusManager.setStatus("Please enter your email address", StatusManager.Type.WARNING);
-            NotificationManager.show("Email field cannot be empty", NotificationManager.Type.WARNING);
-            return;
-        }
-
         if (!EmailValidator.isValidEmail(email)) {
             StatusManager.setStatus("Please enter a valid email address", StatusManager.Type.WARNING);
             NotificationManager.show("Invalid email format", NotificationManager.Type.WARNING);
@@ -106,21 +99,14 @@ public class LoginViewController {
 
         authStore.login(email, new AuthStore.AuthCallback() {
             @Override
-            public void onSuccess(User user) {
-                Platform.runLater(() -> {
-                    NotificationManager.show("Login successful! Welcome " +
-                            (user.getName() != null ? user.getName() : user.getEmail()),
-                            NotificationManager.Type.SUCCESS);
-                    navigationManager.navigateTo((Stage) emailField.getScene().getWindow(),
-                            navigationManager.getInboxView());
-                });
+            public void onSuccess() {
+                navigationManager.navigateTo((Stage) emailField.getScene().getWindow(),
+                        navigationManager.getInboxView());
             }
 
             @Override
             public void onFailure() {
-                Platform.runLater(() -> {
-                    StatusManager.setStatus("Login failed. Please try again.", StatusManager.Type.ERROR);
-                });
+
             }
         });
     }

@@ -20,7 +20,7 @@ import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
 import progr3.mail.client.models.NotificationManager;
-import progr3.mail.client.models.UserCache;
+import progr3.mail.client.models.UserStore;
 
 import java.util.ArrayList;
 
@@ -71,7 +71,7 @@ public class InboxViewController {
     @FXML
     private Circle connectionIndicator;
 
-    private UserCache userCache;
+    private UserStore userStore;
     private MessageStore messageStore;
     private AuthStore authStore;
     private HealthStore healthStore;
@@ -85,7 +85,7 @@ public class InboxViewController {
         this.messageStore = new MessageStore(messageApi);
 
         var userApi = new UserApi(apiHandler);
-        this.userCache = new UserCache(userApi);
+        this.userStore = new UserStore(userApi);
         this.authStore = new AuthStore(userApi);
 
         var healthApi = new HealthApi(apiHandler);
@@ -154,7 +154,7 @@ public class InboxViewController {
         // Sender column
         senderColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
-                        userCache.getUserById(cellData.getValue().getSenderUserGUID()).getName()));
+                        userStore.getUserById(cellData.getValue().getSenderUserGUID()).getName()));
 
         // Subject column
         subjectColumn.setCellValueFactory(
@@ -206,11 +206,11 @@ public class InboxViewController {
     private void displayMessageDetails(Message message) {
         var recipients = new ArrayList<String>();
         message.getRecipientsUserGUIDs().forEach(guid -> {
-            recipients.add(userCache.getUserById(guid).getEmail());
+            recipients.add(userStore.getUserById(guid).getEmail());
         });
         detailRecipientsLabel.setText(String.join(", ", recipients));
-        detailSenderLabel.setText(userCache.getUserById(message.getSenderUserGUID()).getName() + " <" +
-                userCache.getUserById(message.getSenderUserGUID()).getEmail() + ">");
+        detailSenderLabel.setText(userStore.getUserById(message.getSenderUserGUID()).getName() + " <" +
+                userStore.getUserById(message.getSenderUserGUID()).getEmail() + ">");
         detailSubjectLabel.setText(message.getSubject());
         detailDateLabel.setText(
                 DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER, message.getDate().toString()));
@@ -275,7 +275,7 @@ public class InboxViewController {
             while (change.next()) {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
-                    userCache.updateUserCache(addedMessages);
+                    userStore.updateUserCache(addedMessages);
                     messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
                     updateMessageCountLabel();
@@ -343,7 +343,7 @@ public class InboxViewController {
             return;
         }
 
-        User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
+        User sender = userStore.getUserById(selectedMessage.getSenderUserGUID());
         if (sender != null) {
             String to = sender.getEmail();
             String subject = selectedMessage.getSubject();
@@ -369,12 +369,12 @@ public class InboxViewController {
             return;
         }
 
-        User sender = userCache.getUserById(selectedMessage.getSenderUserGUID());
+        User sender = userStore.getUserById(selectedMessage.getSenderUserGUID());
         if (sender != null) {
             var recipients = new ArrayList<String>();
             recipients.add(sender.getEmail());
             selectedMessage.getRecipientsUserGUIDs().forEach(guid -> {
-                var user = userCache.getUserById(guid);
+                var user = userStore.getUserById(guid);
                 if (user != null && !user.getEmail().equals(AuthStore.getUser().getEmail())
                         && !user.getEmail().equals(sender.getEmail()))
                     recipients.add(user.getEmail());
@@ -405,8 +405,8 @@ public class InboxViewController {
 
         String subject = "Fwd: " + selectedMessage.getSubject();
         String body = "\n\n--- Forwarded message ---\nFrom: " +
-                userCache.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
-                userCache.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
+                userStore.getUserById(selectedMessage.getSenderUserGUID()).getName() + " <" +
+                userStore.getUserById(selectedMessage.getSenderUserGUID()).getEmail() + ">\nDate: " +
                 DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER,
                         selectedMessage.getDate().toString())
                 + "\nSubject: " +

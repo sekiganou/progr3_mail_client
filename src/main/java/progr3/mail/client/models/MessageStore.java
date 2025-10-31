@@ -2,6 +2,7 @@ package progr3.mail.client.models;
 
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import javafx.application.Platform;
@@ -13,6 +14,7 @@ import progr3.mail.client.model.Message;
 public class MessageStore {
     private static ObservableList<Message> messageList = FXCollections.observableArrayList();
     private static ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
+    private static HashMap<String, Message> messageMap = new HashMap<>();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
 
@@ -82,10 +84,17 @@ public class MessageStore {
             return;
 
         StatusManager.setStatus("Loading messages...", StatusManager.Type.INFO);
-
         new Thread(() -> {
+            if (AuthStore.isFirstLogin()) {
+                messageMap.clear();
+            }
 
-            Message[] messages = messageApi.getMessages();
+            Message[] messages = AuthStore.isFirstLogin() ? messageApi
+                    .getMessages() : messageMap.values().toArray(new Message[0]);
+
+            if (AuthStore.isFirstLogin()) {
+                AuthStore.setIsNotFirstLogin();
+            }
 
             Platform.runLater(() -> {
                 if (messages == null) {
@@ -99,6 +108,9 @@ public class MessageStore {
                 messageList.clear();
                 for (Message message : messages) {
                     message = setIsNew(message, false);
+                    if (!messageMap.containsKey(message.getGuid())) {
+                        messageMap.put(message.getGuid(), message);
+                    }
                 }
                 messageList.addAll(messages);
 
@@ -146,6 +158,7 @@ public class MessageStore {
                 for (Message message : messages) {
                     message = setIsNew(message, true);
                     messageList.add(0, message);
+                    messageMap.put(message.getGuid(), message);
                 }
 
                 int messageCount = messages.length;
@@ -200,7 +213,7 @@ public class MessageStore {
                 .toList();
 
         trimmedRecipientUserEmails.stream()
-                .filter(r -> !EmailValidator.isValidEmail(r))
+                .filter(email -> !EmailValidator.isValidEmail(email))
                 .findFirst()
                 .ifPresent(invalid -> {
                     StatusManager.setStatus("Invalid email: " + invalid, StatusManager.Type.WARNING);
@@ -214,9 +227,8 @@ public class MessageStore {
 
             Platform.runLater(() -> {
                 if (messageId == null || messageId.isEmpty()) {
-                    Platform.runLater(() -> {
-                        StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
-                    });
+                    NotificationManager.show("Failed to send message", NotificationManager.Type.ERROR);
+                    StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
 
                     callback.onFailure();
                     return;
@@ -255,10 +267,11 @@ public class MessageStore {
                     return;
                 }
 
+                var removedFromMap = messageMap.remove(message.getGuid()) != null;
                 var removedFromMessageList = messageList.remove(message);
                 var removedFromFilteredMessageList = filteredMessageList.remove(message);
 
-                if (!removedFromMessageList && !removedFromFilteredMessageList) {
+                if (!removedFromMessageList && !removedFromFilteredMessageList && !removedFromMap) {
                     StatusManager.setStatus("Message deleted but you may need to refresh the view",
                             StatusManager.Type.WARNING);
                     callback.onFailure();

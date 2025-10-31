@@ -1,34 +1,56 @@
 package progr3.mail.client.models;
 
+import javafx.application.Platform;
 import progr3.mail.client.api.UserApi;
 import progr3.mail.client.model.User;
 
 public class AuthStore {
     private static User user;
     private UserApi userApi;
+    private static boolean isFirstLogin = true;
 
     public AuthStore(UserApi userApi) {
         this.userApi = userApi;
     }
 
     public interface AuthCallback {
-        void onSuccess(User user);
+        void onSuccess();
 
         void onFailure();
+    }
+
+    public static boolean isFirstLogin() {
+        return isFirstLogin;
+    }
+
+    public static boolean setIsNotFirstLogin() {
+        return isFirstLogin = false;
     }
 
     public void login(String email, AuthCallback callback) {
         new Thread(() -> {
             user = userApi.login(email);
-            if (user != null) {
-                callback.onSuccess(user);
-            } else {
-                callback.onFailure();
-            }
+
+            Platform.runLater(() -> {
+                if (user != null) {
+                    NotificationManager.show("Login successful! Welcome " +
+                            (user.getName() != null ? user.getName() : user.getEmail()),
+                            NotificationManager.Type.SUCCESS);
+
+                    callback.onSuccess();
+                } else {
+                    NotificationManager.show("Login failed. Please try again.", NotificationManager.Type.ERROR);
+                    StatusManager.setStatus("Login failed. Please try again.", StatusManager.Type.ERROR);
+
+                    callback.onFailure();
+                }
+            });
         }).start();
     }
 
     public boolean logout() {
+        isFirstLogin = true;
+
         if (AuthStore.isAuthenticated())
             AuthStore.clearAuth();
 

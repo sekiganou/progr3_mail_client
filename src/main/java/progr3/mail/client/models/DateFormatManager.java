@@ -17,8 +17,6 @@ public class DateFormatManager {
             LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
             var formatted = localDateTime.format(formatter);
 
-            System.out.println("Original timestamp: " + timestamp);
-            System.out.println("Formatted timestamp: " + formatted);
             return formatted;
         } catch (Exception e) {
             System.err.println("Error formatting timestamp: " + e.getMessage());
