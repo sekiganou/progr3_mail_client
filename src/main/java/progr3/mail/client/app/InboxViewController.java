@@ -163,6 +163,22 @@ public class InboxViewController {
             return new SimpleStringProperty(formattedTime);
         });
 
+        timestampColumn.comparatorProperty().set((s1, s2) -> {
+            Message m1 = messagesTableView.getItems().stream()
+                    .filter(m -> DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER,
+                            m.getDate().toString()).equals(s1))
+                    .findFirst().orElse(null);
+            Message m2 = messagesTableView.getItems().stream()
+                    .filter(m -> DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER,
+                            m.getDate().toString()).equals(s2))
+                    .findFirst().orElse(null);
+
+            if (m1 == null || m2 == null)
+                return 0;
+
+            return m1.getDate().compareTo(m2.getDate());
+        });
+
         // Apply row styling based on read status
         messagesTableView.setRowFactory(tv -> new TableRow<Message>() {
             @Override
