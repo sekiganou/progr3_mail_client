@@ -30,7 +30,6 @@
             </HBox>
             
             <HBox alignment="CENTER_LEFT" spacing="10.0">
-                <TextField fx:id="searchField" prefWidth="300.0" promptText="Search messages..." style="-fx-font-size: 13px; -fx-padding: 8px;" />
                 <Button fx:id="composeButton" onAction="#onComposeClick" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8px 20px; -fx-background-radius: 5px; -fx-cursor: hand;" text="Compose" />
                 <Button fx:id="refreshButton" onAction="#onRefreshClick" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8px 20px; -fx-background-radius: 5px; -fx-cursor: hand;" text="Refresh" />
             </HBox>

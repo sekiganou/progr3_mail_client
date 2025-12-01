@@ -30,9 +30,6 @@ public class InboxViewController {
     private Label userLabel;
 
     @FXML
-    private TextField searchField;
-
-    @FXML
     private TableView<Message> messagesTableView;
 
     @FXML
@@ -96,7 +93,6 @@ public class InboxViewController {
     public void initialize() {
         setupUserInfo();
         setupTableColumns();
-        setupSearchFilter();
         setupMessageSelection();
 
         setupMessageListListener();
@@ -183,14 +179,6 @@ public class InboxViewController {
         });
     }
 
-    private void setupSearchFilter() {
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            messageStore.filterMessages(newValue);
-            messagesTableView.setItems(MessageStore.getFilteredMessageList());
-            updateMessageCountLabel();
-        });
-    }
-
     private void setupMessageSelection() {
         messagesTableView.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> {
@@ -221,7 +209,7 @@ public class InboxViewController {
         messageStore.loadMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
-                messagesTableView.setItems(MessageStore.getFilteredMessageList());
+                messagesTableView.setItems(MessageStore.getMessageList());
             }
 
             @Override
@@ -247,11 +235,7 @@ public class InboxViewController {
     }
 
     private void updateMessageCountLabel() {
-        messageCountLabel.setText("Total messages: " + MessageStore.getFilteredMessageCount() +
-                (MessageStore
-                        .getFilteredMessageCount() != MessageStore.getMessageCount()
-                                ? " (filtered from " + MessageStore.getMessageCount() + ")"
-                                : "")
+        messageCountLabel.setText("Total messages: " + MessageStore.getMessageCount()
                 +
                 " | Unread: " + MessageStore.getNewMessageCount());
 
@@ -276,13 +260,11 @@ public class InboxViewController {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
                     userStore.updateUserCache(addedMessages);
-                    messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
                     updateMessageCountLabel();
                 }
 
                 if (change.wasRemoved()) {
-                    messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
                     updateMessageCountLabel();
                 }
