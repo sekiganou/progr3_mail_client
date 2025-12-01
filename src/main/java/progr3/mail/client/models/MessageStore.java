@@ -1,5 +1,6 @@
 package progr3.mail.client.models;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -13,7 +14,6 @@ import progr3.mail.client.model.Message;
 
 public class MessageStore {
     private static ObservableList<Message> messageList = FXCollections.observableArrayList();
-    private static ObservableList<Message> filteredMessageList = FXCollections.observableArrayList();
     private static HashMap<String, Message> messageMap = new HashMap<>();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
@@ -44,16 +44,8 @@ public class MessageStore {
         return messageList;
     }
 
-    public static ObservableList<Message> getFilteredMessageList() {
-        return filteredMessageList;
-    }
-
     public static int getMessageCount() {
         return messageList.size();
-    }
-
-    public static int getFilteredMessageCount() {
-        return filteredMessageList.size();
     }
 
     public static int getNewMessageCount() {
@@ -170,22 +162,6 @@ public class MessageStore {
         }).start();
     }
 
-    public void filterMessages(String filterText) {
-        if (filterText == null || filterText.trim().isEmpty()) {
-            filteredMessageList.setAll(messageList);
-        } else {
-            String lowerCaseFilter = filterText.toLowerCase();
-            filteredMessageList.clear();
-            for (Message message : messageList) {
-                if (message.getSenderUserGUID().toLowerCase().contains(lowerCaseFilter) ||
-                        message.getSubject().toLowerCase().contains(lowerCaseFilter) ||
-                        message.getBody().toLowerCase().contains(lowerCaseFilter)) {
-                    filteredMessageList.add(message);
-                }
-            }
-        }
-    }
-
     public void sendMessage(List<String> recipientUserEmails, String subject, String body, SendCallback callback) {
         if (!AuthStore.isAuthenticated())
             return;
@@ -212,13 +188,19 @@ public class MessageStore {
                 .map(String::trim)
                 .toList();
 
+        var invalidRecipientEmail = new ArrayList<String>();
+
         trimmedRecipientUserEmails.stream()
                 .filter(email -> !EmailValidator.isValidEmail(email))
                 .findFirst()
                 .ifPresent(invalid -> {
                     StatusManager.setStatus("Invalid email: " + invalid, StatusManager.Type.WARNING);
                     NotificationManager.show("Invalid email: " + invalid, NotificationManager.Type.WARNING);
+                    invalidRecipientEmail.add(invalid);
                 });
+
+        if (invalidRecipientEmail.size() > 0)
+            return;
 
         StatusManager.setStatus("Sending message...", StatusManager.Type.INFO);
 
@@ -269,9 +251,8 @@ public class MessageStore {
 
                 var removedFromMap = messageMap.remove(message.getGuid()) != null;
                 var removedFromMessageList = messageList.remove(message);
-                var removedFromFilteredMessageList = filteredMessageList.remove(message);
 
-                if (!removedFromMessageList && !removedFromFilteredMessageList && !removedFromMap) {
+                if (!removedFromMessageList && !removedFromMap) {
                     StatusManager.setStatus("Message deleted but you may need to refresh the view",
                             StatusManager.Type.WARNING);
                     callback.onFailure();

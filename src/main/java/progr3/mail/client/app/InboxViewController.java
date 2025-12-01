@@ -30,9 +30,6 @@ public class InboxViewController {
     private Label userLabel;
 
     @FXML
-    private TextField searchField;
-
-    @FXML
     private TableView<Message> messagesTableView;
 
     @FXML
@@ -96,7 +93,6 @@ public class InboxViewController {
     public void initialize() {
         setupUserInfo();
         setupTableColumns();
-        setupSearchFilter();
         setupMessageSelection();
 
         setupMessageListListener();
@@ -167,6 +163,22 @@ public class InboxViewController {
             return new SimpleStringProperty(formattedTime);
         });
 
+        timestampColumn.comparatorProperty().set((s1, s2) -> {
+            Message m1 = messagesTableView.getItems().stream()
+                    .filter(m -> DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER,
+                            m.getDate().toString()).equals(s1))
+                    .findFirst().orElse(null);
+            Message m2 = messagesTableView.getItems().stream()
+                    .filter(m -> DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER,
+                            m.getDate().toString()).equals(s2))
+                    .findFirst().orElse(null);
+
+            if (m1 == null || m2 == null)
+                return 0;
+
+            return m1.getDate().compareTo(m2.getDate());
+        });
+
         // Apply row styling based on read status
         messagesTableView.setRowFactory(tv -> new TableRow<Message>() {
             @Override
@@ -180,14 +192,6 @@ public class InboxViewController {
                     setStyle("");
                 }
             }
-        });
-    }
-
-    private void setupSearchFilter() {
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            messageStore.filterMessages(newValue);
-            messagesTableView.setItems(MessageStore.getFilteredMessageList());
-            updateMessageCountLabel();
         });
     }
 
@@ -221,7 +225,7 @@ public class InboxViewController {
         messageStore.loadMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
-                messagesTableView.setItems(MessageStore.getFilteredMessageList());
+                messagesTableView.setItems(MessageStore.getMessageList());
             }
 
             @Override
@@ -247,11 +251,7 @@ public class InboxViewController {
     }
 
     private void updateMessageCountLabel() {
-        messageCountLabel.setText("Total messages: " + MessageStore.getFilteredMessageCount() +
-                (MessageStore
-                        .getFilteredMessageCount() != MessageStore.getMessageCount()
-                                ? " (filtered from " + MessageStore.getMessageCount() + ")"
-                                : "")
+        messageCountLabel.setText("Total messages: " + MessageStore.getMessageCount()
                 +
                 " | Unread: " + MessageStore.getNewMessageCount());
 
@@ -276,13 +276,11 @@ public class InboxViewController {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
                     userStore.updateUserCache(addedMessages);
-                    messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
                     updateMessageCountLabel();
                 }
 
                 if (change.wasRemoved()) {
-                    messageStore.filterMessages(searchField.getText());
                     messagesTableView.refresh();
                     updateMessageCountLabel();
                 }
