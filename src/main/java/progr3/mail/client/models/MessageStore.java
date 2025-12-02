@@ -75,7 +75,7 @@ public class MessageStore {
         if (!AuthStore.isAuthenticated())
             return;
 
-        StatusManager.setStatus("Loading messages...", StatusManager.Type.INFO);
+        StatusManager.setStatus("Loading messages...", Status.INFO);
         new Thread(() -> {
             if (AuthStore.isFirstLogin()) {
                 messageMap.clear();
@@ -90,8 +90,8 @@ public class MessageStore {
 
             Platform.runLater(() -> {
                 if (messages == null) {
-                    StatusManager.setStatus("Failed to load messages", StatusManager.Type.ERROR);
-                    NotificationManager.show("Failed to load messages", NotificationManager.Type.ERROR);
+                    StatusManager.setStatus("Failed to load messages", Status.ERROR);
+                    NotificationManager.show("Failed to load messages", Status.ERROR);
 
                     callback.onFailure();
                     return;
@@ -107,7 +107,7 @@ public class MessageStore {
                 messageList.addAll(messages);
 
                 int messageCount = messages.length;
-                StatusManager.setStatus("Loaded " + messageCount + " message(s)", StatusManager.Type.SUCCESS);
+                StatusManager.setStatus("Loaded " + messageCount + " message(s)", Status.SUCCESS);
                 callback.onSuccess(messageCount);
             });
         }).start();
@@ -127,22 +127,22 @@ public class MessageStore {
                 })
                 .orElse(new Date(0));
 
-        StatusManager.setStatus("Checking for new messages...", StatusManager.Type.INFO);
+        StatusManager.setStatus("Checking for new messages...", Status.INFO);
 
         new Thread(() -> {
             Message[] messages = messageApi.getMessagesWithFilter(latestTimestamp, new Date());
 
             Platform.runLater(() -> {
                 if (messages == null) {
-                    StatusManager.setStatus("Failed to load new messages", StatusManager.Type.ERROR);
-                    NotificationManager.show("Failed to load new messages", NotificationManager.Type.ERROR);
+                    StatusManager.setStatus("Failed to load new messages", Status.ERROR);
+                    NotificationManager.show("Failed to load new messages", Status.ERROR);
 
                     callback.onFailure();
                     return;
                 }
 
                 if (messages.length == 0) {
-                    StatusManager.setStatus("No new messages", StatusManager.Type.INFO);
+                    StatusManager.setStatus("No new messages", Status.INFO);
                     callback.onSuccess(0);
                     return;
                 }
@@ -154,9 +154,9 @@ public class MessageStore {
                 }
 
                 int messageCount = messages.length;
-                StatusManager.setStatus("Loaded " + messageCount + " new message(s)", StatusManager.Type.SUCCESS);
+                StatusManager.setStatus("Loaded " + messageCount + " new message(s)", Status.SUCCESS);
                 NotificationManager.show("Loaded " + messageCount + " new message(s)",
-                        NotificationManager.Type.SUCCESS);
+                        Status.SUCCESS);
                 callback.onSuccess(messageCount);
             });
         }).start();
@@ -167,20 +167,20 @@ public class MessageStore {
             return;
 
         if (recipientUserEmails.isEmpty()) {
-            StatusManager.setStatus("Please enter recipient email(s)", StatusManager.Type.WARNING);
-            NotificationManager.show("Recipient email is required", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("Please enter recipient email(s)", Status.WARNING);
+            NotificationManager.show("Recipient email is required", Status.WARNING);
             return;
         }
 
         if (subject.isEmpty()) {
-            StatusManager.setStatus("Please enter a subject", StatusManager.Type.WARNING);
-            NotificationManager.show("Subject is required", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("Please enter a subject", Status.WARNING);
+            NotificationManager.show("Subject is required", Status.WARNING);
             return;
         }
 
         if (body.isEmpty()) {
-            StatusManager.setStatus("Please enter a message", StatusManager.Type.WARNING);
-            NotificationManager.show("Message body is required", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("Please enter a message", Status.WARNING);
+            NotificationManager.show("Message body is required", Status.WARNING);
             return;
         }
 
@@ -194,31 +194,31 @@ public class MessageStore {
                 .filter(email -> !EmailValidator.isValidEmail(email))
                 .findFirst()
                 .ifPresent(invalid -> {
-                    StatusManager.setStatus("Invalid email: " + invalid, StatusManager.Type.WARNING);
-                    NotificationManager.show("Invalid email: " + invalid, NotificationManager.Type.WARNING);
+                    StatusManager.setStatus("Invalid email: " + invalid, Status.WARNING);
+                    NotificationManager.show("Invalid email: " + invalid, Status.WARNING);
                     invalidRecipientEmail.add(invalid);
                 });
 
         if (invalidRecipientEmail.size() > 0)
             return;
 
-        StatusManager.setStatus("Sending message...", StatusManager.Type.INFO);
+        StatusManager.setStatus("Sending message...", Status.INFO);
 
         new Thread(() -> {
             String messageId = messageApi.sendMessage(trimmedRecipientUserEmails, subject, body);
 
             Platform.runLater(() -> {
                 if (messageId == null || messageId.isEmpty()) {
-                    NotificationManager.show("Failed to send message", NotificationManager.Type.ERROR);
-                    StatusManager.setStatus("Failed to send message", StatusManager.Type.ERROR);
+                    NotificationManager.show("Failed to send message", Status.ERROR);
+                    StatusManager.setStatus("Failed to send message", Status.ERROR);
 
                     callback.onFailure();
                     return;
                 }
 
-                StatusManager.setStatus("Message sent successfully", StatusManager.Type.SUCCESS);
+                StatusManager.setStatus("Message sent successfully", Status.SUCCESS);
                 NotificationManager.show("Message sent to " + trimmedRecipientUserEmails.size() +
-                        " recipient(s)", NotificationManager.Type.SUCCESS);
+                        " recipient(s)", Status.SUCCESS);
                 callback.onSuccess();
             });
         }).start();
@@ -229,12 +229,12 @@ public class MessageStore {
             return;
 
         if (message == null) {
-            StatusManager.setStatus("No message selected to delete", StatusManager.Type.WARNING);
-            NotificationManager.show("No message selected to delete", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("No message selected to delete", Status.WARNING);
+            NotificationManager.show("No message selected to delete", Status.WARNING);
             return;
         }
 
-        StatusManager.setStatus("Deleting message...", StatusManager.Type.INFO);
+        StatusManager.setStatus("Deleting message...", Status.INFO);
 
         new Thread(() -> {
             boolean success = (messageApi.deleteMessage(message.getGuid()) != null);
@@ -242,8 +242,8 @@ public class MessageStore {
             Platform.runLater(() -> {
 
                 if (!success) {
-                    StatusManager.setStatus("Failed to delete message", StatusManager.Type.ERROR);
-                    NotificationManager.show("Failed to delete message", NotificationManager.Type.ERROR);
+                    StatusManager.setStatus("Failed to delete message", Status.ERROR);
+                    NotificationManager.show("Failed to delete message", Status.ERROR);
 
                     callback.onFailure();
                     return;
@@ -254,13 +254,13 @@ public class MessageStore {
 
                 if (!removedFromMessageList && !removedFromMap) {
                     StatusManager.setStatus("Message deleted but you may need to refresh the view",
-                            StatusManager.Type.WARNING);
+                            Status.WARNING);
                     callback.onFailure();
                     return;
                 }
 
-                StatusManager.setStatus("Message deleted successfully", StatusManager.Type.SUCCESS);
-                NotificationManager.show("Message deleted successfully", NotificationManager.Type.SUCCESS);
+                StatusManager.setStatus("Message deleted successfully", Status.SUCCESS);
+                NotificationManager.show("Message deleted successfully", Status.SUCCESS);
                 callback.onSuccess();
             });
         }).start();

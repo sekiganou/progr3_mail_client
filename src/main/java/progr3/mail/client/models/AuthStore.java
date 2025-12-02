@@ -35,12 +35,12 @@ public class AuthStore {
                 if (user != null) {
                     NotificationManager.show("Login successful! Welcome " +
                             (user.getName() != null ? user.getName() : user.getEmail()),
-                            NotificationManager.Type.SUCCESS);
+                            Status.SUCCESS);
 
                     callback.onSuccess();
                 } else {
-                    NotificationManager.show("Login failed. Please try again.", NotificationManager.Type.ERROR);
-                    StatusManager.setStatus("Login failed. Please try again.", StatusManager.Type.ERROR);
+                    NotificationManager.show("Login failed. Please try again.", Status.ERROR);
+                    StatusManager.setStatus("Login failed. Please try again.", Status.ERROR);
 
                     callback.onFailure();
                 }

@@ -9,6 +9,8 @@ import progr3.mail.client.model.Request;
 import progr3.mail.client.model.Response;
 import progr3.mail.client.model.Request.Command;
 import progr3.mail.client.models.NotificationManager;
+import progr3.mail.client.models.Status;
+import progr3.mail.client.models.StatusManager;
 
 public class ApiHandler {
     private ObjectMapper mapper = new ObjectMapper();
@@ -49,7 +51,10 @@ public class ApiHandler {
                 String errorMsg = response.getMessage() != null ? response.getMessage()
                         : "Request failed with status " + response.getStatus();
 
-                Platform.runLater(() -> NotificationManager.show(errorMsg, NotificationManager.Type.ERROR));
+                Platform.runLater(() -> {
+                    NotificationManager.show(errorMsg, Status.ERROR);
+                    StatusManager.setStatus(errorMsg, Status.ERROR);
+                });
                 return null;
             }
 

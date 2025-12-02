@@ -27,7 +27,7 @@ public class HealthStore {
 
     public void checkHealth() {
         isServerHealthy.set(UNKNOWN);
-        StatusManager.setConnectionStatus("Checking health...", StatusManager.Type.INFO);
+        StatusManager.setConnectionStatus("Checking health...", Status.INFO);
 
         new Thread(() -> {
             isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);
@@ -36,7 +36,7 @@ public class HealthStore {
 
     public void checkHealth(HealthCallback callback) {
         isServerHealthy.set(UNKNOWN);
-        StatusManager.setConnectionStatus("Checking health...", StatusManager.Type.INFO);
+        StatusManager.setConnectionStatus("Checking health...", Status.INFO);
 
         new Thread(() -> {
             isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);

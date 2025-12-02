@@ -74,7 +74,7 @@ public class NavigationManager {
         } catch (IOException e) {
             e.printStackTrace();
             NotificationManager.show("Error loading '" + toView.getTitle() + "' view",
-                    NotificationManager.Type.ERROR);
+                    Status.ERROR);
             return null;
         }
     }

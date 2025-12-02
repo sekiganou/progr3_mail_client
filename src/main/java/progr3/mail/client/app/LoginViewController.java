@@ -15,6 +15,7 @@ import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
 import progr3.mail.client.models.NotificationManager;
+import progr3.mail.client.models.Status;
 
 public class LoginViewController {
 
@@ -77,9 +78,9 @@ public class LoginViewController {
         HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> {
                 if (newValue.intValue() == HealthStore.HEALTHY)
-                    StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);
+                    StatusManager.setConnectionStatus("Server is reachable", Status.SUCCESS);
                 else
-                    StatusManager.setConnectionStatus("Server is unreachable", StatusManager.Type.ERROR);
+                    StatusManager.setConnectionStatus("Server is unreachable", Status.ERROR);
 
             });
         });
@@ -90,12 +91,12 @@ public class LoginViewController {
         String email = emailField.getText().trim();
 
         if (!EmailValidator.isValidEmail(email)) {
-            StatusManager.setStatus("Please enter a valid email address", StatusManager.Type.WARNING);
-            NotificationManager.show("Invalid email format", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("Please enter a valid email address", Status.WARNING);
+            NotificationManager.show("Invalid email format", Status.WARNING);
             return;
         }
 
-        StatusManager.setStatus("Logging in...", StatusManager.Type.INFO);
+        StatusManager.setStatus("Logging in...", Status.INFO);
 
         authStore.login(email, new AuthStore.AuthCallback() {
             @Override

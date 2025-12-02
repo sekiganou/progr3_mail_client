@@ -11,6 +11,7 @@ import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.models.AuthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
+import progr3.mail.client.models.Status;
 import progr3.mail.client.models.StatusManager;
 
 import java.util.List;
@@ -132,7 +133,7 @@ public class ComposeViewController {
     @FXML
     private void onClearClick() {
         clearForm();
-        StatusManager.setStatus("Form cleared", StatusManager.Type.INFO);
+        StatusManager.setStatus("Form cleared", Status.INFO);
     }
 
     private void clearForm() {

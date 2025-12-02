@@ -20,6 +20,7 @@ import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.StatusManager;
 import progr3.mail.client.models.NotificationManager;
+import progr3.mail.client.models.Status;
 import progr3.mail.client.models.UserStore;
 
 import java.util.ArrayList;
@@ -244,7 +245,7 @@ public class InboxViewController {
             @Override
             public void onSuccess(int messageCount) {
                 if (messageCount == 0) {
-                    NotificationManager.show("No new messages", NotificationManager.Type.INFO);
+                    NotificationManager.show("No new messages", Status.INFO);
                     return;
                 }
             }
@@ -267,9 +268,9 @@ public class InboxViewController {
             Platform.runLater(() -> {
                 if (newValue.intValue() == HealthStore.HEALTHY) {
                     // text is set but there is not label in the UI for it
-                    StatusManager.setConnectionStatus("Server is reachable", StatusManager.Type.SUCCESS);
+                    StatusManager.setConnectionStatus("Server is reachable", Status.SUCCESS);
                 } else {
-                    StatusManager.setConnectionStatus("Server is unreachable", StatusManager.Type.ERROR);
+                    StatusManager.setConnectionStatus("Server is unreachable", Status.ERROR);
                 }
             });
         });
@@ -306,13 +307,13 @@ public class InboxViewController {
 
         if (!success) {
             NotificationManager.show("Logout failed. Please try again.",
-                    NotificationManager.Type.ERROR);
+                    Status.ERROR);
             return;
         }
 
         if (success) {
             NotificationManager.show("Logged out successfully",
-                    NotificationManager.Type.INFO);
+                    Status.INFO);
             navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(),
                     navigationManager.getLoginView());
         }
@@ -332,7 +333,7 @@ public class InboxViewController {
         if (controller != null) {
             controller.prefillForm(header, to, subject, body);
         } else {
-            NotificationManager.show("Error opening compose view", NotificationManager.Type.ERROR);
+            NotificationManager.show("Error opening compose view", Status.ERROR);
         }
     }
 
@@ -341,8 +342,8 @@ public class InboxViewController {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
         if (selectedMessage == null) {
-            StatusManager.setStatus("No message selected to reply", StatusManager.Type.WARNING);
-            NotificationManager.show("No message selected to reply", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("No message selected to reply", Status.WARNING);
+            NotificationManager.show("No message selected to reply", Status.WARNING);
             return;
         }
 
@@ -367,8 +368,8 @@ public class InboxViewController {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
         if (selectedMessage == null) {
-            StatusManager.setStatus("No message selected to reply all", StatusManager.Type.WARNING);
-            NotificationManager.show("No message selected to reply all", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("No message selected to reply all", Status.WARNING);
+            NotificationManager.show("No message selected to reply all", Status.WARNING);
             return;
         }
 
@@ -401,8 +402,8 @@ public class InboxViewController {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
         if (selectedMessage == null) {
-            StatusManager.setStatus("No message selected to forward", StatusManager.Type.WARNING);
-            NotificationManager.show("No message selected to forward", NotificationManager.Type.WARNING);
+            StatusManager.setStatus("No message selected to forward", Status.WARNING);
+            NotificationManager.show("No message selected to forward", Status.WARNING);
             return;
         }
 

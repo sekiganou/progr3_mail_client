@@ -10,13 +10,6 @@ public class StatusManager {
     static final String STYLE_WARNING = "-fx-fill: #FF9800; -fx-text-fill: #FF9800;";
     static final String STYLE_DEFAULT = "-fx-fill: #000000; -fx-text-fill: #000000;";
 
-    public enum Type {
-        SUCCESS,
-        ERROR,
-        INFO,
-        WARNING
-    }
-
     private static SimpleStringProperty statusLabelText = new SimpleStringProperty("");
     private static SimpleStringProperty statusLabelStyle = new SimpleStringProperty("");
 
@@ -31,23 +24,23 @@ public class StatusManager {
         return statusLabelStyle;
     }
 
-    public static void setStatus(String text, Type status) {
+    public static void setStatus(String text, Status status) {
         statusLabelText.set(text);
 
         statusLabelStyle.set(STYLE_DEFAULT);
 
         String style;
         switch (status) {
-            case Type.SUCCESS:
+            case Status.SUCCESS:
                 style = STYLE_SUCCESS;
                 break;
-            case Type.ERROR:
+            case Status.ERROR:
                 style = STYLE_ERROR;
                 break;
-            case Type.WARNING:
+            case Status.WARNING:
                 style = STYLE_WARNING;
                 break;
-            case Type.INFO:
+            case Status.INFO:
             default:
                 style = STYLE_INFO;
                 break;
@@ -64,23 +57,23 @@ public class StatusManager {
         return connectionLabelStyle;
     }
 
-    public static void setConnectionStatus(String text, Type status) {
+    public static void setConnectionStatus(String text, Status status) {
         connectionLabelText.set(text);
 
         connectionLabelStyle.set(STYLE_DEFAULT);
 
         String style;
         switch (status) {
-            case Type.SUCCESS:
+            case Status.SUCCESS:
                 style = STYLE_SUCCESS;
                 break;
-            case Type.ERROR:
+            case Status.ERROR:
                 style = STYLE_ERROR;
                 break;
-            case Type.WARNING:
+            case Status.WARNING:
                 style = STYLE_WARNING;
                 break;
-            case Type.INFO:
+            case Status.INFO:
             default:
                 style = STYLE_INFO;
                 break;
