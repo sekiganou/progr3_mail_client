@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.List;
 
 import progr3.mail.client.model.Message;
-import progr3.mail.client.model.MailRequest.ForwardMessageBody;
 import progr3.mail.client.model.MailRequest.GetMessagesWithFiltersBody;
 import progr3.mail.client.model.MailRequest.SendMessageBody;
 import progr3.mail.client.model.Request.Command;
@@ -38,15 +37,6 @@ public class MessageApi {
         requestBody.setBody(body);
 
         return api.sendRequest(Command.SEND_MESSAGE, requestBody, String.class);
-    }
-
-    public String forwardMessage(String messageId, List<String> recipientUserEmails) {
-        ForwardMessageBody requestBody = new ForwardMessageBody();
-        requestBody.setForwarderUserId(AuthStore.getUserId());
-        requestBody.setMessageId(messageId);
-        requestBody.setRecipientsUserEmails(recipientUserEmails);
-
-        return api.sendRequest(Command.FORWARD_MESSAGE, requestBody, String.class);
     }
 
     public String deleteMessage(String messageId) {
