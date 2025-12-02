@@ -179,6 +179,8 @@ public class InboxViewController {
             return m1.getDate().compareTo(m2.getDate());
         });
 
+        timestampColumn.setSortType(TableColumn.SortType.DESCENDING);
+
         // Apply row styling based on read status
         messagesTableView.setRowFactory(tv -> new TableRow<Message>() {
             @Override
@@ -226,6 +228,9 @@ public class InboxViewController {
             @Override
             public void onSuccess(int messageCount) {
                 messagesTableView.setItems(MessageStore.getMessageList());
+                messagesTableView.getSortOrder().clear();
+                messagesTableView.getSortOrder().add(timestampColumn);
+                messagesTableView.sort();
             }
 
             @Override
