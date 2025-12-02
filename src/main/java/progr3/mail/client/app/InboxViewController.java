@@ -1,6 +1,7 @@
 package progr3.mail.client.app;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
@@ -24,6 +25,7 @@ import progr3.mail.client.models.Status;
 import progr3.mail.client.models.UserStore;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class InboxViewController {
 
@@ -43,7 +45,7 @@ public class InboxViewController {
     private TableColumn<Message, String> subjectColumn;
 
     @FXML
-    private TableColumn<Message, String> timestampColumn;
+    private TableColumn<Message, java.util.Date> timestampColumn;
 
     @FXML
     private Label detailSenderLabel;
@@ -148,41 +150,30 @@ public class InboxViewController {
             }
         });
 
-        // Sender column
         senderColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
                         userStore.getUserById(cellData.getValue().getSenderUserGUID()).getName()));
 
-        // Subject column
         subjectColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(cellData.getValue().getSubject()));
 
-        // Timestamp column
-        timestampColumn.setCellValueFactory(cellData -> {
-            String timestamp = cellData.getValue().getDate().toString();
-            String formattedTime = DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER, timestamp);
-            return new SimpleStringProperty(formattedTime);
-        });
+        timestampColumn.setCellValueFactory(
+                cellData -> new SimpleObjectProperty<>(cellData.getValue().getDate()));
 
-        timestampColumn.comparatorProperty().set((s1, s2) -> {
-            Message m1 = messagesTableView.getItems().stream()
-                    .filter(m -> DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER,
-                            m.getDate().toString()).equals(s1))
-                    .findFirst().orElse(null);
-            Message m2 = messagesTableView.getItems().stream()
-                    .filter(m -> DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER,
-                            m.getDate().toString()).equals(s2))
-                    .findFirst().orElse(null);
-
-            if (m1 == null || m2 == null)
-                return 0;
-
-            return m1.getDate().compareTo(m2.getDate());
+        timestampColumn.setCellFactory(column -> new TableCell<Message, Date>() {
+            @Override
+            protected void updateItem(Date date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) {
+                    setText(null);
+                } else {
+                    setText(DateFormatManager.formatTimestamp(DateFormatManager.DATE_FORMATTER, date.toString()));
+                }
+            }
         });
 
         timestampColumn.setSortType(TableColumn.SortType.DESCENDING);
 
-        // Apply row styling based on read status
         messagesTableView.setRowFactory(tv -> new TableRow<Message>() {
             @Override
             protected void updateItem(Message item, boolean empty) {
