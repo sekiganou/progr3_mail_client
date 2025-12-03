@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import progr3.mail.client.model.Message;
+import progr3.mail.client.model.MailRequest.DeleteMessageBody;
 import progr3.mail.client.model.MailRequest.GetMessagesWithFiltersBody;
 import progr3.mail.client.model.MailRequest.SendMessageBody;
 import progr3.mail.client.model.Request.Command;
@@ -40,7 +41,10 @@ public class MessageApi {
     }
 
     public String deleteMessage(String messageId) {
-        return api.sendRequest(Command.DELETE_MESSAGE, messageId, String.class);
+        DeleteMessageBody requestBody = new DeleteMessageBody();
+        requestBody.setUserId(AuthStore.getUserId());
+        requestBody.setMessageId(messageId);
+        return api.sendRequest(Command.DELETE_MESSAGE, requestBody, String.class);
     }
 
 }
