@@ -1,4 +1,4 @@
-package progr3.mail.client.app;
+package progr3.mail.client.controllers;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;

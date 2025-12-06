@@ -15,9 +15,12 @@ import progr3.mail.client.models.StatusManager;
 public class ApiHandler {
     private ObjectMapper mapper = new ObjectMapper();
 
+    private static final int TIMEOUT_MILLISECONDS = 30000;
+
     public <T> T sendRequest(Command command, Object requestBody, Class<T> responseBodyType) {
         try {
             Socket socket = new Socket("localhost", 8080);
+            socket.setSoTimeout(TIMEOUT_MILLISECONDS);
 
             // Prepare request
             Request request = new Request();

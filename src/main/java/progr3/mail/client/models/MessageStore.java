@@ -3,8 +3,9 @@ package progr3.mail.client.models;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -14,7 +15,7 @@ import progr3.mail.client.model.Message;
 
 public class MessageStore {
     private static ObservableList<Message> messageList = FXCollections.observableArrayList();
-    private static HashMap<String, Message> messageMap = new HashMap<>();
+    private static Map<String, Message> messageMap = new ConcurrentHashMap<>();
     private MessageApi messageApi;
     private static final String IS_NEW = "isNew";
 
@@ -166,21 +167,24 @@ public class MessageStore {
         if (!AuthStore.isAuthenticated())
             return;
 
-        if (recipientUserEmails.isEmpty()) {
-            StatusManager.setStatus("Please enter recipient email(s)", Status.WARNING);
-            NotificationManager.show("Recipient email is required", Status.WARNING);
-            return;
+        List<String> missingFields = new ArrayList<>();
+
+        if (recipientUserEmails.isEmpty() || recipientUserEmails.stream().allMatch(String::isEmpty)) {
+            missingFields.add("recipient email(s)");
         }
 
         if (subject.isEmpty()) {
-            StatusManager.setStatus("Please enter a subject", Status.WARNING);
-            NotificationManager.show("Subject is required", Status.WARNING);
-            return;
+            missingFields.add("subject");
         }
 
         if (body.isEmpty()) {
-            StatusManager.setStatus("Please enter a message", Status.WARNING);
-            NotificationManager.show("Message body is required", Status.WARNING);
+            missingFields.add("message body");
+        }
+
+        if (missingFields.size() > 0) {
+            String missing = String.join(", ", missingFields);
+            StatusManager.setStatus("Please fill in the following fields: " + missing, Status.WARNING);
+            NotificationManager.show("Missing fields: " + missing, Status.WARNING);
             return;
         }
 
@@ -190,17 +194,17 @@ public class MessageStore {
 
         var invalidRecipientEmail = new ArrayList<String>();
 
-        trimmedRecipientUserEmails.stream()
-                .filter(email -> !EmailValidator.isValidEmail(email))
-                .findFirst()
-                .ifPresent(invalid -> {
-                    StatusManager.setStatus("Invalid email: " + invalid, Status.WARNING);
-                    NotificationManager.show("Invalid email: " + invalid, Status.WARNING);
-                    invalidRecipientEmail.add(invalid);
-                });
+        for (String email : trimmedRecipientUserEmails) {
+            if (!EmailValidator.isValidEmail(email))
+                invalidRecipientEmail.add(email);
+        }
 
-        if (invalidRecipientEmail.size() > 0)
+        if (invalidRecipientEmail.size() > 0) {
+            String invalidEmails = String.join(", ", invalidRecipientEmail);
+            StatusManager.setStatus("Invalid recipient email(s): " + invalidEmails, Status.WARNING);
+            NotificationManager.show("Invalid recipient email(s): " + invalidEmails, Status.WARNING);
             return;
+        }
 
         StatusManager.setStatus("Sending message...", Status.INFO);
 

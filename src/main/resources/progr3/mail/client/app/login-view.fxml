@@ -10,7 +10,7 @@
 
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml/1" 
       xmlns="http://javafx.com/javafx/21.0.3-internal" 
-      fx:controller="progr3.mail.client.app.LoginViewController"
+      fx:controller="progr3.mail.client.controllers.LoginViewController"
       style="-fx-background-color: #f5f5f5;">
     <padding>
         <Insets bottom="40.0" left="40.0" right="40.0" top="40.0" />

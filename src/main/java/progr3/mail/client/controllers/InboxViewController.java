@@ -1,4 +1,4 @@
-package progr3.mail.client.app;
+package progr3.mail.client.controllers;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -219,6 +219,9 @@ public class InboxViewController {
         messageStore.loadMessages(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
+                // Binding View-Model tramite ObservableList (pattern Observer)
+                // Il Controller media l'accesso iniziale, garantendo separazione MVC
+                // loadMessages() viene chiamato una volta al caricamento della InboxView
                 messagesTableView.setItems(MessageStore.getMessageList());
                 messagesTableView.getSortOrder().clear();
                 messagesTableView.getSortOrder().add(timestampColumn);
@@ -273,14 +276,13 @@ public class InboxViewController {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
                     userStore.updateUserCache(addedMessages);
-                    messagesTableView.refresh();
-                    updateMessageCountLabel();
                 }
 
                 if (change.wasRemoved()) {
-                    messagesTableView.refresh();
-                    updateMessageCountLabel();
                 }
+
+                messagesTableView.refresh();
+                updateMessageCountLabel();
 
                 // if (change.wasUpdated()) { ... }
             }
@@ -294,7 +296,7 @@ public class InboxViewController {
 
     @FXML
     private void onLogoutClick() {
-        var success = authStore.logout();
+        boolean success = authStore.logout();
 
         if (!success) {
             NotificationManager.show("Logout failed. Please try again.",
@@ -302,12 +304,10 @@ public class InboxViewController {
             return;
         }
 
-        if (success) {
-            NotificationManager.show("Logged out successfully",
-                    Status.INFO);
-            navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(),
-                    navigationManager.getLoginView());
-        }
+        NotificationManager.show("Logged out successfully",
+                Status.INFO);
+        navigationManager.navigateTo((Stage) userLabel.getScene().getWindow(),
+                navigationManager.getLoginView());
     }
 
     @FXML
@@ -342,9 +342,7 @@ public class InboxViewController {
         if (sender != null) {
             String to = sender.getEmail();
             String subject = selectedMessage.getSubject();
-            if (!subject.toLowerCase().startsWith("re:")) {
-                subject = "Re: " + subject;
-            }
+            subject = "Re: " + subject;
             String body = "\n\n--- On "
                     + DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER,
                             selectedMessage.getDate().toString())
@@ -376,8 +374,7 @@ public class InboxViewController {
             });
             String to = String.join(", ", recipients);
             String subject = selectedMessage.getSubject();
-            if (!subject.toLowerCase().startsWith("re:"))
-                subject = "Re: " + subject;
+            subject = "Re: " + subject;
 
             String body = "\n\n--- On "
                     + DateFormatManager.formatTimestamp(DateFormatManager.DATE_TIME_FORMATTER,

@@ -11,7 +11,7 @@
 <VBox spacing="15.0" 
       xmlns:fx="http://javafx.com/fxml/1" 
       xmlns="http://javafx.com/javafx/21.0.3-internal" 
-      fx:controller="progr3.mail.client.app.ComposeViewController"
+      fx:controller="progr3.mail.client.controllers.ComposeViewController"
       style="-fx-background-color: #ffffff;">
     
     <padding>
