@@ -1,5 +1,6 @@
 package progr3.mail.client.models;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import progr3.mail.client.api.HealthApi;
 
@@ -21,8 +22,22 @@ public class HealthStore {
         void onFailure();
     }
 
+    public static int getIsServerHealthy() {
+        return isServerHealthy.get();
+    }
+
     public static SimpleIntegerProperty getIsServerHealthyProperty() {
         return isServerHealthy;
+    }
+
+    public static void setConnectionStatus(int status) {
+        Platform.runLater(() -> {
+            if (status == HEALTHY) {
+                StatusManager.setConnectionStatus("Server is reachable", Status.SUCCESS);
+            } else if (status == UNHEALTHY) {
+                StatusManager.setConnectionStatus("Server is not reachable", Status.ERROR);
+            }
+        });
     }
 
     public void checkHealth() {
@@ -31,6 +46,8 @@ public class HealthStore {
 
         new Thread(() -> {
             isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);
+
+            setConnectionStatus(isServerHealthy.get());
         }).start();
     }
 
@@ -40,7 +57,10 @@ public class HealthStore {
 
         new Thread(() -> {
             isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);
-            if (isServerHealthy.get() == 1) {
+
+            setConnectionStatus(isServerHealthy.get());
+
+            if (isServerHealthy.get() == HEALTHY) {
                 callback.onSuccess();
             } else {
                 callback.onFailure();

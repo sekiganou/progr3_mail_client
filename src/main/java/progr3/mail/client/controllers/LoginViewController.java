@@ -49,7 +49,6 @@ public class LoginViewController {
 
     @FXML
     public void initialize() {
-        statusLabel.setText("");
         setupHealthListener();
         setupStatusListener();
 
@@ -76,13 +75,7 @@ public class LoginViewController {
 
     private void setupHealthListener() {
         HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
-            Platform.runLater(() -> {
-                if (newValue.intValue() == HealthStore.HEALTHY)
-                    StatusManager.setConnectionStatus("Server is reachable", Status.SUCCESS);
-                else
-                    StatusManager.setConnectionStatus("Server is unreachable", Status.ERROR);
-
-            });
+            HealthStore.setConnectionStatus(newValue.intValue());
         });
     }
 

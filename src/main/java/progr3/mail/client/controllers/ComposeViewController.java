@@ -5,10 +5,12 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.models.AuthStore;
+import progr3.mail.client.models.HealthStore;
 import progr3.mail.client.models.MessageStore;
 import progr3.mail.client.models.NavigationManager;
 import progr3.mail.client.models.Status;
@@ -39,6 +41,9 @@ public class ComposeViewController {
     @FXML
     private Label charCountLabel;
 
+    @FXML
+    private Circle connectionIndicator;
+
     private NavigationManager navigationManager;
     private MessageStore messageStore;
 
@@ -55,15 +60,28 @@ public class ComposeViewController {
         setupUserInfo();
         setupCharacterCounter();
         setupStatusListener();
+        setupHealthListener();
+
+        HealthStore.setConnectionStatus(HealthStore.getIsServerHealthy());
     }
 
     private void setupStatusListener() {
+        StatusManager.getConnectionLabelStyle().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> connectionIndicator.setStyle(newValue));
+        });
+
         StatusManager.getStatusLabelText().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> statusLabel.setText(newValue));
         });
 
         StatusManager.getStatusLabelStyle().addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> statusLabel.setStyle(newValue));
+        });
+    }
+
+    private void setupHealthListener() {
+        HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
+            HealthStore.setConnectionStatus(newValue.intValue());
         });
     }
 

@@ -40,9 +40,13 @@ public class StatusManager {
         connectionLabelText.set(text);
 
         connectionLabelStyle.set(getStyle(ColorManager.DEFAULT));
-
         String style = getStyleForStatus(status);
+        connectionLabelStyle.set(style);
+    }
 
+    public static void setConnectionStatus(Status status) {
+        connectionLabelStyle.set(getStyle(ColorManager.DEFAULT));
+        String style = getStyleForStatus(status);
         connectionLabelStyle.set(style);
     }
 

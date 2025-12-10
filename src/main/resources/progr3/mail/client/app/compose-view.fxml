@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.shape.Circle?>
 
 <VBox spacing="15.0" 
       xmlns:fx="http://javafx.com/fxml/1" 
@@ -23,6 +24,7 @@
         <Label fx:id="headerLabel" 
               text="Compose New Message" 
               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #333333;" />
+        <Circle fx:id="connectionIndicator" radius="6" fill="#2196F3" stroke="#cccccc" strokeWidth="1" />
         <HBox HBox.hgrow="ALWAYS" />
         <Button fx:id="backButton" 
                 text="← Back to Messages" 

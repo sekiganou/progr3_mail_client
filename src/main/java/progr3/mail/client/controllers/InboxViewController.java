@@ -9,7 +9,6 @@ import javafx.scene.control.*;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import progr3.mail.client.api.ApiHandler;
-import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
 import progr3.mail.client.api.UserApi;
 import progr3.mail.client.model.Message;
@@ -74,7 +73,6 @@ public class InboxViewController {
     private UserStore userStore;
     private MessageStore messageStore;
     private AuthStore authStore;
-    private HealthStore healthStore;
     private NavigationManager navigationManager;
 
     public InboxViewController() {
@@ -87,9 +85,6 @@ public class InboxViewController {
         var userApi = new UserApi(apiHandler);
         this.userStore = new UserStore(userApi);
         this.authStore = new AuthStore(userApi);
-
-        var healthApi = new HealthApi(apiHandler);
-        this.healthStore = new HealthStore(healthApi);
     }
 
     @FXML
@@ -102,9 +97,8 @@ public class InboxViewController {
         setupHealthListener();
         setupStatusListener();
 
+        HealthStore.setConnectionStatus(HealthStore.getIsServerHealthy());
         loadMessages();
-
-        healthStore.checkHealth();
     }
 
     private void setupStatusListener() {
@@ -259,14 +253,7 @@ public class InboxViewController {
 
     private void setupHealthListener() {
         HealthStore.getIsServerHealthyProperty().addListener((observable, oldValue, newValue) -> {
-            Platform.runLater(() -> {
-                if (newValue.intValue() == HealthStore.HEALTHY) {
-                    // text is set but there is not label in the UI for it
-                    StatusManager.setConnectionStatus("Server is reachable", Status.SUCCESS);
-                } else {
-                    StatusManager.setConnectionStatus("Server is unreachable", Status.ERROR);
-                }
-            });
+            HealthStore.setConnectionStatus(newValue.intValue());
         });
     }
 
