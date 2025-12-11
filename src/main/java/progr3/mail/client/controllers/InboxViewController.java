@@ -210,7 +210,7 @@ public class InboxViewController {
     }
 
     private void loadMessages() {
-        messageStore.loadMessages(new MessageStore.LoadCallback() {
+        messageStore.loadMessagesAsync(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
                 // Binding View-Model tramite ObservableList (pattern Observer)
@@ -229,7 +229,7 @@ public class InboxViewController {
     }
 
     private void refreshMessages() {
-        messageStore.loadNewMessages(new MessageStore.LoadCallback() {
+        messageStore.loadNewMessagesAsync(new MessageStore.LoadCallback() {
             @Override
             public void onSuccess(int messageCount) {
                 if (messageCount == 0) {
@@ -262,7 +262,7 @@ public class InboxViewController {
             while (change.next()) {
                 if (change.wasAdded()) {
                     Message[] addedMessages = change.getAddedSubList().toArray(new Message[0]);
-                    userStore.updateUserCache(addedMessages);
+                    userStore.updateUserCacheSync(addedMessages);
                 }
 
                 if (change.wasRemoved()) {
@@ -397,7 +397,7 @@ public class InboxViewController {
     private void onDeleteClick() {
         Message selectedMessage = messagesTableView.getSelectionModel().getSelectedItem();
 
-        messageStore.deleteMessage(selectedMessage, new MessageStore.DeleteCallback() {
+        messageStore.deleteMessageAsync(selectedMessage, new MessageStore.DeleteCallback() {
             @Override
             public void onSuccess() {
                 detailBodyArea.clear();

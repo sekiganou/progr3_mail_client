@@ -52,7 +52,7 @@ public class LoginViewController {
         setupHealthListener();
         setupStatusListener();
 
-        healthStore.checkHealth();
+        healthStore.checkHealthAsync();
     }
 
     private void setupStatusListener() {
@@ -91,7 +91,7 @@ public class LoginViewController {
 
         StatusManager.setStatus("Logging in...", Status.INFO);
 
-        authStore.login(email, new AuthStore.AuthCallback() {
+        authStore.loginAsync(email, new AuthStore.AuthCallback() {
             @Override
             public void onSuccess() {
                 navigationManager.navigateTo((Stage) emailField.getScene().getWindow(),

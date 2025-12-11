@@ -4,7 +4,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javafx.application.Platform;
 import progr3.mail.client.api.ApiHandler;
 import progr3.mail.client.api.HealthApi;
 import progr3.mail.client.api.MessageApi;
@@ -25,27 +24,26 @@ public class Client {
         var messageApi = new MessageApi(apiHandler);
         this.healthStore = new HealthStore(healthApi);
         this.messageStore = new MessageStore(messageApi);
-        this.scheduler = Executors.newScheduledThreadPool(1);
+        this.scheduler = Executors.newScheduledThreadPool(2); // Two threads: one for health checks, one for message
+                                                              // polling
     }
 
     public void start() {
         scheduler.scheduleAtFixedRate(() -> {
-            Platform.runLater(() -> {
-                healthStore.checkHealth();
-            });
+            healthStore.checkHealthSync();
         }, POLLING_HEALTH_SECONDS, POLLING_HEALTH_SECONDS, TimeUnit.SECONDS);
 
         scheduler.scheduleAtFixedRate(() -> {
-            Platform.runLater(() -> {
-                messageStore.loadNewMessages(new MessageStore.LoadCallback() {
-                    @Override
-                    public void onSuccess(int messageCount) {
-                    }
+            messageStore.loadNewMessagesSync(new MessageStore.LoadCallback() {
+                @Override
+                public void onSuccess(int messageCount) {
+                    // No further action needed on success
+                }
 
-                    @Override
-                    public void onFailure() {
-                    }
-                });
+                @Override
+                public void onFailure() {
+                    // No further action needed on failure
+                }
             });
         }, POLLING_MESSAGES_SECONDS, POLLING_MESSAGES_SECONDS, TimeUnit.SECONDS);
     }

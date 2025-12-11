@@ -7,7 +7,7 @@ build:
 test: build
 	mvn test
 
-run: build
+run:
 	@echo "Starting $(MAIN_CLASS)..."
 	@mkdir -p logs
 	mvn exec:java -Dexec.mainClass=$(MAIN_CLASS) \

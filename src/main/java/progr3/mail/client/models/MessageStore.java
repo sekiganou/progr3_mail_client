@@ -57,6 +57,18 @@ public class MessageStore {
         return setIsNew(msg, false);
     }
 
+    private Date getLatestMessageDate() {
+        return messageList.stream()
+                .map(Message::getDate)
+                .max(new Comparator<Date>() {
+                    @Override
+                    public int compare(Date o1, Date o2) {
+                        return o1.compareTo(o2);
+                    }
+                })
+                .orElse(new Date(0));
+    }
+
     public static boolean isNew(Message msg) {
         if (msg.getAdditionalProperties().containsKey(IS_NEW)) {
             Object isNewObj = msg.getAdditionalProperties().get(IS_NEW);
@@ -72,11 +84,14 @@ public class MessageStore {
         return msg;
     }
 
-    public void loadMessages(LoadCallback callback) {
+    public void loadMessagesAsync(LoadCallback callback) {
         if (!AuthStore.isAuthenticated())
             return;
 
-        StatusManager.setStatus("Loading messages...", Status.INFO);
+        Platform.runLater(() -> {
+            StatusManager.setStatus("Loading messages...", Status.INFO);
+        });
+
         new Thread(() -> {
             if (AuthStore.isFirstLogin()) {
                 messageMap.clear();
@@ -114,56 +129,61 @@ public class MessageStore {
         }).start();
     }
 
-    public void loadNewMessages(LoadCallback callback) {
+    private void loadNewMessages(LoadCallback callback) {
+        var latestTimestamp = getLatestMessageDate();
+
+        Message[] messages = messageApi.getMessagesWithFilter(latestTimestamp, new Date());
+
+        Platform.runLater(() -> {
+            if (messages == null) {
+                StatusManager.setStatus("Failed to load new messages", Status.ERROR);
+                NotificationManager.show("Failed to load new messages", Status.ERROR);
+
+                callback.onFailure();
+                return;
+            }
+
+            if (messages.length == 0) {
+                StatusManager.setStatus("No new messages", Status.INFO);
+                callback.onSuccess(0);
+                return;
+            }
+
+            for (Message message : messages) {
+                message = setIsNew(message, true);
+                messageList.add(0, message);
+                messageMap.put(message.getGuid(), message);
+            }
+
+            int messageCount = messages.length;
+            StatusManager.setStatus("Loaded " + messageCount + " new message(s)", Status.SUCCESS);
+            NotificationManager.show("Loaded " + messageCount + " new message(s)",
+                    Status.SUCCESS);
+            callback.onSuccess(messageCount);
+        });
+    }
+
+    public void loadNewMessagesAsync(LoadCallback callback) {
         if (!AuthStore.isAuthenticated())
             return;
 
-        var latestTimestamp = messageList.stream()
-                .map(Message::getDate)
-                .max(new Comparator<Date>() {
-                    @Override
-                    public int compare(Date o1, Date o2) {
-                        return o1.compareTo(o2);
-                    }
-                })
-                .orElse(new Date(0));
-
-        StatusManager.setStatus("Checking for new messages...", Status.INFO);
+        Platform.runLater(() -> StatusManager.setStatus("Checking for new messages...", Status.INFO));
 
         new Thread(() -> {
-            Message[] messages = messageApi.getMessagesWithFilter(latestTimestamp, new Date());
-
-            Platform.runLater(() -> {
-                if (messages == null) {
-                    StatusManager.setStatus("Failed to load new messages", Status.ERROR);
-                    NotificationManager.show("Failed to load new messages", Status.ERROR);
-
-                    callback.onFailure();
-                    return;
-                }
-
-                if (messages.length == 0) {
-                    StatusManager.setStatus("No new messages", Status.INFO);
-                    callback.onSuccess(0);
-                    return;
-                }
-
-                for (Message message : messages) {
-                    message = setIsNew(message, true);
-                    messageList.add(0, message);
-                    messageMap.put(message.getGuid(), message);
-                }
-
-                int messageCount = messages.length;
-                StatusManager.setStatus("Loaded " + messageCount + " new message(s)", Status.SUCCESS);
-                NotificationManager.show("Loaded " + messageCount + " new message(s)",
-                        Status.SUCCESS);
-                callback.onSuccess(messageCount);
-            });
+            loadNewMessages(callback);
         }).start();
     }
 
-    public void sendMessage(List<String> recipientUserEmails, String subject, String body, SendCallback callback) {
+    public void loadNewMessagesSync(LoadCallback callback) {
+        if (!AuthStore.isAuthenticated())
+            return;
+
+        Platform.runLater(() -> StatusManager.setStatus("Checking for new messages...", Status.INFO));
+
+        loadNewMessages(callback);
+    }
+
+    public void sendMessageAsync(List<String> recipientUserEmails, String subject, String body, SendCallback callback) {
         if (!AuthStore.isAuthenticated())
             return;
 
@@ -183,8 +203,10 @@ public class MessageStore {
 
         if (missingFields.size() > 0) {
             String missing = String.join(", ", missingFields);
-            StatusManager.setStatus("Please fill in the following fields: " + missing, Status.WARNING);
-            NotificationManager.show("Missing fields: " + missing, Status.WARNING);
+            Platform.runLater(() -> {
+                StatusManager.setStatus("Please fill in the following fields: " + missing, Status.WARNING);
+                NotificationManager.show("Missing fields: " + missing, Status.WARNING);
+            });
             return;
         }
 
@@ -201,8 +223,10 @@ public class MessageStore {
 
         if (invalidRecipientEmail.size() > 0) {
             String invalidEmails = String.join(", ", invalidRecipientEmail);
-            StatusManager.setStatus("Invalid recipient email(s): " + invalidEmails, Status.WARNING);
-            NotificationManager.show("Invalid recipient email(s): " + invalidEmails, Status.WARNING);
+            Platform.runLater(() -> {
+                StatusManager.setStatus("Invalid recipient email(s): " + invalidEmails, Status.WARNING);
+                NotificationManager.show("Invalid recipient email(s): " + invalidEmails, Status.WARNING);
+            });
             return;
         }
 
@@ -228,7 +252,7 @@ public class MessageStore {
         }).start();
     }
 
-    public void deleteMessage(Message message, DeleteCallback callback) {
+    public void deleteMessageAsync(Message message, DeleteCallback callback) {
         if (!AuthStore.isAuthenticated())
             return;
 

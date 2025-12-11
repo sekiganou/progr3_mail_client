@@ -40,31 +40,22 @@ public class HealthStore {
         });
     }
 
-    public void checkHealth() {
+    public void checkHealthSync() {
         isServerHealthy.set(UNKNOWN);
-        StatusManager.setConnectionStatus("Checking health...", Status.INFO);
+        Platform.runLater(() -> StatusManager.setConnectionStatus("Checking health...", Status.INFO));
 
-        new Thread(() -> {
-            isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);
+        isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);
 
-            setConnectionStatus(isServerHealthy.get());
-        }).start();
+        setConnectionStatus(isServerHealthy.get());
     }
 
-    public void checkHealth(HealthCallback callback) {
+    public void checkHealthAsync() {
         isServerHealthy.set(UNKNOWN);
-        StatusManager.setConnectionStatus("Checking health...", Status.INFO);
+        Platform.runLater(() -> StatusManager.setConnectionStatus("Checking health...", Status.INFO));
 
         new Thread(() -> {
             isServerHealthy.set(healthApi.isServerHealthy() ? HEALTHY : UNHEALTHY);
-
             setConnectionStatus(isServerHealthy.get());
-
-            if (isServerHealthy.get() == HEALTHY) {
-                callback.onSuccess();
-            } else {
-                callback.onFailure();
-            }
         }).start();
     }
 }

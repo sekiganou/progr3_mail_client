@@ -27,7 +27,7 @@ public class AuthStore {
         return isFirstLogin = false;
     }
 
-    public void login(String email, AuthCallback callback) {
+    public void loginAsync(String email, AuthCallback callback) {
         new Thread(() -> {
             user = userApi.login(email);
 

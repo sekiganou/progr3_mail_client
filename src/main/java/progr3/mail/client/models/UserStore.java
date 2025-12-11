@@ -18,7 +18,7 @@ public class UserStore {
         return userMap.get(userId);
     }
 
-    public void updateUserCache(Message[] messageList) {
+    public void updateUserCacheSync(Message[] messageList) {
         HashMap<String, Boolean> missingUserIds = new HashMap<>();
         for (Message msg : messageList) {
             if (!userMap.containsKey(msg.getSenderUserGUID())) {

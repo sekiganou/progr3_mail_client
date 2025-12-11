@@ -125,7 +125,7 @@ public class ComposeViewController {
         String body = bodyArea.getText().trim();
         String[] recipientEmails = to.split(",");
 
-        messageStore.sendMessage(List.of(recipientEmails), subject, body, new MessageStore.SendCallback() {
+        messageStore.sendMessageAsync(List.of(recipientEmails), subject, body, new MessageStore.SendCallback() {
             @Override
             public void onSuccess() {
                 Platform.runLater(() -> {
